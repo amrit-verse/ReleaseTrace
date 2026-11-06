@@ -1,0 +1,68 @@
+name: ReleaseTrace CI & Release Ingestion
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-and-ingest:
+    name: Build, Test & Dispatch Release Event
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Prisma Schema Validation
+        run: npx prisma validate
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Test Suite
+        run: npm run test
+
+      - name: Production Build Check
+        run: npm run build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy' }}
+
+      - name: Collect & Dispatch Signed Deployment Event
+        if: always()
+        run: |
+          BUILD_STATUS="${{ job.status }}"
+          echo "Job Status: $BUILD_STATUS"
+          if [ "$BUILD_STATUS" = "success" ]; then
+            node scripts/collect-deployment-metadata.mjs --ignore-connection-failure
+          else
+            node scripts/collect-deployment-metadata.mjs --build-failed --ignore-connection-failure
+          fi
+        env:
+          RELEASETRACE_WEBHOOK_SECRET: ${{ secrets.RELEASETRACE_WEBHOOK_SECRET || 'dev_releasetrace_webhook_secret' }}
+          RELEASETRACE_ENDPOINT: ${{ secrets.RELEASETRACE_ENDPOINT || 'https://releasetrace.domain/api/webhooks/deployments' }}
+          RELEASETRACE_PROJECT_ID: ${{ vars.RELEASETRACE_PROJECT_ID || 'proj_releasetrace_core' }}
+          RELEASETRACE_PROJECT_NAME: "ReleaseTrace Core"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
