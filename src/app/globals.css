@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #08090d;
+  --foreground: #f3f4f6;
+  color-scheme: dark;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom dark engineering scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0a0c12;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1e2436;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2e3752;
+}
+
+/* Technical scanline / grid texture - very subtle, non-distracting */
+.tech-grid {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+}
+
+.tech-dot-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 0);
+  background-size: 16px 16px;
+}
+
+/* Precision status badge pulses */
+@keyframes technical-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.animate-tech-pulse {
+  animation: technical-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Selection */
+::selection {
+  background: #8b5cf633;
+  color: #ffffff;
+}
