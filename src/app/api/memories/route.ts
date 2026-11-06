@@ -1,21 +1,35 @@
 import { NextResponse } from "next/server";
-import { mockMemories } from "@/data/mockData";
+import { HindsightAdapter } from "@/intelligence/hindsight/adapter";
 
-export async function GET() {
-  return NextResponse.json({
-    status: "ok",
-    total: mockMemories.length,
-    memories: mockMemories,
-    source: "HINDSIGHT_API",
-    engineVersion: "v2.4.0-release",
-    cluster: "rt-prod-cluster-us-east-4",
-  });
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const bankId = searchParams.get("bankId") || "releasetrace-default";
+    const query = searchParams.get("q") || "deployment failure migration";
+
+    const adapter = HindsightAdapter.getInstance();
+    const recallResult = await adapter.recall(bankId, query);
+
+    return NextResponse.json({
+      status: "ok",
+      bankId,
+      total: recallResult.results.length,
+      memories: recallResult.results,
+      source: adapter.isMock() ? "HINDSIGHT_MOCK_TRANSPORT" : "HINDSIGHT_CLOUD",
+      isMock: adapter.isMock(),
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: "Failed to retrieve memories", details: err?.message || String(err) },
+      { status: 500 }
+    );
+  }
 }
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { title, service, environment, severity, symptoms, rootCause, failedApproaches, resolution, provenance } = body;
+    const { bankId, title, service, rootCause, resolution, confirmation, tags, content } = body;
 
     if (!title || !service || !rootCause) {
       return NextResponse.json(
@@ -24,44 +38,60 @@ export async function POST(request: Request) {
       );
     }
 
-    const newMemory = {
-      id: `MEM-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`,
+    if (!confirmation || !confirmation.isConfirmed || !confirmation.confirmedBy) {
+      return NextResponse.json(
+        { error: "Engineer confirmation required. Speculative or unconfirmed memories cannot be retained into Hindsight." },
+        { status: 403 }
+      );
+    }
+
+    const targetBankId = bankId || "releasetrace-default";
+    const adapter = HindsightAdapter.getInstance();
+
+    const memoryContent = content || JSON.stringify({
       title,
       service,
-      environment: environment || "production",
-      severity: severity || "SEV-2",
-      symptoms: symptoms || [],
       rootCause,
-      failedApproaches: failedApproaches || [],
-      resolution: resolution || "Pending runbook ratification",
-      provenance: provenance || {
-        gitCommit: "manual-input",
-        incidentTicket: "INC-MANUAL",
-        runbookUrl: "https://runbooks.internal/tbd",
-        postMortemAuthor: "engineer@internal",
-        signoffEngineer: "lead@internal",
-        timestamp: new Date().toISOString(),
-        serviceVersion: "v1.0.0",
-      },
-      tags: ["retained", service],
-      recalledCount: 1,
-      preventedIncidentsCount: 0,
-      source: "HINDSIGHT_API",
-    };
+      resolution,
+      confirmedBy: confirmation.confirmedBy,
+      timestamp: new Date().toISOString(),
+    });
+
+    const retainResult = await adapter.retain(targetBankId, memoryContent, {
+      document_id: `MEM-${Date.now()}`,
+      tags: tags || [service, "verified-resolution"],
+      context: `Confirmed by ${confirmation.confirmedBy}: ${resolution}`,
+    });
 
     return NextResponse.json(
       {
         message: "Memory successfully indexed and committed to Hindsight Memory Engine",
-        memory: newMemory,
+        bankId: targetBankId,
+        retainResult,
         retentionStatus: "VERIFIED_RETENTION",
-        indexTimeMs: 14.8,
+        isMock: adapter.isMock(),
       },
       { status: 201 }
     );
-  } catch {
+  } catch (err: any) {
     return NextResponse.json(
-      { error: "Invalid JSON payload" },
-      { status: 400 }
+      { error: "Failed to retain memory", details: err?.message || String(err) },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const bankId = searchParams.get("bankId") || "releasetrace-default";
+    const adapter = HindsightAdapter.getInstance();
+    adapter.clearMockBank(bankId);
+    return NextResponse.json({ success: true, message: `Bank ${bankId} cleared.` });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: "Failed to clear bank", details: err?.message || String(err) },
+      { status: 500 }
     );
   }
 }

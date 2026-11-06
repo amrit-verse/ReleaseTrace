@@ -58,11 +58,11 @@ export class HindsightAdapter {
 
   private constructor(config: HindsightAdapterConfig = {}) {
     this.config = {
-      baseUrl: config.baseUrl || process.env.HINDSIGHT_API_URL || 'http://localhost:8888',
+      baseUrl: config.baseUrl || process.env.HINDSIGHT_BASE_URL || process.env.HINDSIGHT_API_URL || 'https://api.hindsight.vectorize.io',
       apiKey: config.apiKey || process.env.HINDSIGHT_API_KEY,
       userAgent: config.userAgent || 'releasetrace-engine/1.0.0',
       maxAttempts: config.maxAttempts || 3,
-      useMockTransport: config.useMockTransport ?? (process.env.HINDSIGHT_USE_MOCK === 'true'),
+      useMockTransport: config.useMockTransport ?? (process.env.HINDSIGHT_USE_MOCK === 'true' || (!process.env.HINDSIGHT_API_KEY && process.env.NODE_ENV === 'test')),
     };
 
     this.isMockMode = Boolean(this.config.useMockTransport);

@@ -15,7 +15,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const API_KEY = process.env.HINDSIGHT_API_KEY;
-const BASE_URL = process.env.HINDSIGHT_API_URL || process.env.HINDSIGHT_BASE_URL || 'https://api.hindsight.vectorize.io';
+const BASE_URL = process.env.HINDSIGHT_BASE_URL || process.env.HINDSIGHT_API_URL || 'https://api.hindsight.vectorize.io';
 const TEST_BANK_ID = `releasetrace-smoke-${Date.now()}`;
 
 console.log('='.repeat(75));

@@ -61,6 +61,25 @@ export class GroqAdapter {
     };
   }
 
+  public async checkHealth(): Promise<{ isHealthy: boolean; isMock: boolean; error?: string }> {
+    if (this.isMockMode || !this.client) {
+      return {
+        isHealthy: Boolean(process.env.GROQ_API_KEY),
+        isMock: true,
+      };
+    }
+    try {
+      await this.client.models.list();
+      return { isHealthy: true, isMock: false };
+    } catch (err) {
+      return {
+        isHealthy: false,
+        isMock: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
   /**
    * Generates a validated release risk assessment.
    */
