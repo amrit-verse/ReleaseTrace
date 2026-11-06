@@ -10,60 +10,83 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "#08090d",
-        foreground: "#f3f4f6",
+        // Engineering Design System Tokens (Obsidian / Graphite / Signal Blue / Verified Sage)
+        canvas: {
+          DEFAULT: "#101820", // Obsidian base
+          dark: "#0C131A",
+        },
         surface: {
-          DEFAULT: "#0f1118",
-          subtle: "#141722",
-          muted: "#1a1e2d",
-          border: "#23293d",
-          "border-subtle": "#1b2030",
+          DEFAULT: "#1B2A36", // Graphite
+          subtle: "#16232D",
+          elevated: "#223340", // Elevated surface
+          overlay: "#283C4C",
+          muted: "#1B2A36",
+          border: "#243746",
+          "border-subtle": "rgba(154, 170, 182, 0.15)",
+        },
+        signal: {
+          DEFAULT: "#63B9D8", // Signal Blue
+          hover: "#78C6E2",
+          subtle: "rgba(99, 185, 216, 0.12)",
+        },
+        sage: {
+          DEFAULT: "#A3BFAF", // Verified Sage
+          subtle: "rgba(163, 191, 175, 0.15)",
+        },
+        text: {
+          primary: "#F1F5F8",
+          secondary: "#9AAAB6",
+          muted: "#647B8C",
         },
         risk: {
-          critical: "#ef4444",
-          high: "#f97316",
-          elevated: "#eab308",
-          nominal: "#10b981",
-          verified: "#06b6d4",
+          critical: "#D96B6B",
+          high: "#E5A93C",
+          elevated: "#E5A93C",
+          nominal: "#A3BFAF",
+          verified: "#63B9D8",
+          insufficient: "#647B8C",
         },
+        // Backward-compatible tokens
+        background: "#101820",
+        foreground: "#F1F5F8",
         brand: {
-          hindsight: "#8b5cf6",
-          "hindsight-dark": "#6d28d9",
-          cyan: "#06b6d4",
-          emerald: "#10b981",
-          amber: "#f59e0b",
-          rose: "#f43f5e",
+          hindsight: "#63B9D8", // Signal Blue
+          "hindsight-dark": "#1B2A36",
+          cyan: "#63B9D8",
+          emerald: "#A3BFAF",
+          amber: "#E5A93C",
+          rose: "#D96B6B",
         },
       },
       fontFamily: {
         mono: [
+          "var(--font-geist-mono)",
           "ui-monospace",
           "SFMono-Regular",
           "Menlo",
           "Monaco",
           "Consolas",
-          "Liberation Mono",
-          "Courier New",
           "monospace",
         ],
         sans: [
-          "Inter",
+          "var(--font-geist-sans)",
+          "system-ui",
           "-apple-system",
           "BlinkMacSystemFont",
           "Segoe UI",
-          "Roboto",
-          "Helvetica Neue",
-          "Arial",
           "sans-serif",
         ],
       },
       boxShadow: {
-        "technical-sm": "0 1px 2px 0 rgba(0, 0, 0, 0.45)",
-        "technical-md": "0 4px 12px 0 rgba(0, 0, 0, 0.55)",
-        "technical-border": "0 0 0 1px rgba(255, 255, 255, 0.07)",
-        "glow-critical": "0 0 15px -3px rgba(239, 68, 68, 0.25)",
-        "glow-nominal": "0 0 15px -3px rgba(16, 185, 129, 0.25)",
-        "glow-hindsight": "0 0 15px -3px rgba(139, 92, 246, 0.25)",
+        "panel-subtle": "0 1px 3px 0 rgba(0, 0, 0, 0.35)",
+        "panel-elevated": "0 4px 16px -2px rgba(0, 0, 0, 0.45)",
+        "border-inset": "inset 0 1px 0 0 rgba(255, 255, 255, 0.05)",
+      },
+      borderRadius: {
+        sm: "3px",
+        DEFAULT: "4px",
+        md: "6px",
+        lg: "8px",
       },
     },
   },

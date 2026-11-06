@@ -30,6 +30,7 @@
     "groq-sdk": "^1.6.0",
     "inngest": "^4.26.2",
     "lucide-react": "^0.475.0",
+    "motion": "^14.10.1",
     "next": "^15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -1,16 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { EngineerVerificationAction } from "@/types";
 import {
   CheckCircle2,
-  Clock,
   ShieldCheck,
   AlertTriangle,
-  RotateCcw,
   User,
   KeyRound,
+  X,
 } from "lucide-react";
+import { modalVariants, backdropVariants, hoverSubtle, tapSubtle } from "@/lib/motion";
 
 interface VerificationChecklistProps {
   initialActions: EngineerVerificationAction[];
@@ -31,7 +32,6 @@ export function VerificationChecklist({
   const toggleActionStatus = (actionId: string) => {
     const updated = actions.map((act) => {
       if (act.id !== actionId) return act;
-      // Toggle logic
       if (act.status === "PENDING") {
         return {
           ...act,
@@ -78,21 +78,21 @@ export function VerificationChecklist({
   const isFullySatisfied = passedCount === actions.length;
 
   return (
-    <div className="bg-surface border border-surface-border rounded-lg overflow-hidden font-sans">
-      <div className="p-4 bg-surface-subtle/50 border-b border-surface-border flex flex-wrap items-center justify-between gap-3">
+    <div className="bg-surface border border-surface-border rounded overflow-hidden font-sans shadow-panel">
+      <div className="p-4 bg-surface-elevated/60 border-b border-surface-border flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center space-x-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
-          <h3 className="text-sm font-semibold text-zinc-100">
+          <ShieldCheck className="w-4 h-4 text-sage" />
+          <h3 className="text-sm font-semibold text-text-primary">
             Engineer Pre-Rollout Verification Gates
           </h3>
         </div>
         <div className="flex items-center space-x-2 text-xs font-mono">
-          <span className="text-zinc-400">Status:</span>
+          <span className="text-text-muted">Status:</span>
           <span
             className={`font-semibold px-2 py-0.5 rounded border ${
               isFullySatisfied
-                ? "bg-emerald-950/60 text-emerald-400 border-emerald-800"
-                : "bg-amber-950/50 text-amber-400 border-amber-800"
+                ? "bg-sage/15 text-sage border-sage/40"
+                : "bg-risk-warning/15 text-risk-warning border-risk-warning/40"
             }`}
           >
             {passedCount} / {actions.length} GATES VERIFIED
@@ -115,33 +115,33 @@ export function VerificationChecklist({
                   <span
                     className={`font-mono text-[10px] px-1.5 py-0.5 rounded border ${
                       action.category === "DRIFT"
-                        ? "bg-purple-950/50 text-purple-300 border-purple-800/40"
+                        ? "bg-signal/15 text-signal border-signal/30"
                         : action.category === "LOAD_VERIFY"
-                        ? "bg-blue-950/50 text-blue-300 border-blue-800/40"
+                        ? "bg-signal/15 text-signal border-signal/30"
                         : action.category === "ROLLBACK_PREP"
-                        ? "bg-emerald-950/50 text-emerald-300 border-emerald-800/40"
-                        : "bg-zinc-800 text-zinc-300 border-zinc-700"
+                        ? "bg-sage/15 text-sage border-sage/40"
+                        : "bg-surface-elevated text-text-secondary border-surface-border"
                     }`}
                   >
                     {action.category}
                   </span>
-                  <span className="font-semibold text-zinc-200">
+                  <span className="font-semibold text-text-primary">
                     {action.label}
                   </span>
                   {action.required && (
-                    <span className="text-[10px] text-red-400 font-mono">*REQUIRED</span>
+                    <span className="text-[10px] text-risk-critical font-mono">*REQUIRED</span>
                   )}
                 </div>
 
-                <p className="text-zinc-400 leading-relaxed text-[11px]">
+                <p className="text-text-secondary leading-relaxed text-[11px]">
                   {action.description}
                 </p>
 
                 {(action.verifiedBy || action.notes) && (
-                  <div className="text-[10px] font-mono text-zinc-500 flex flex-wrap items-center gap-2 pt-0.5">
+                  <div className="text-[10px] font-mono text-text-muted flex flex-wrap items-center gap-2 pt-0.5">
                     {action.verifiedBy && (
-                      <span className="flex items-center gap-1 text-zinc-400">
-                        <User className="w-3 h-3 text-zinc-500" />
+                      <span className="flex items-center gap-1 text-text-secondary">
+                        <User className="w-3 h-3 text-text-muted" />
                         <span>Signed off by: {action.verifiedBy}</span>
                       </span>
                     )}
@@ -149,7 +149,7 @@ export function VerificationChecklist({
                       <span>• {new Date(action.timestamp).toLocaleTimeString()}</span>
                     )}
                     {action.notes && (
-                      <span className="text-amber-400/90 italic">
+                      <span className="text-risk-warning italic">
                         Note: &ldquo;{action.notes}&rdquo;
                       </span>
                     )}
@@ -159,31 +159,35 @@ export function VerificationChecklist({
 
               {/* Action Buttons */}
               <div className="flex items-center space-x-2 shrink-0 self-end md:self-center font-mono">
-                <button
+                <motion.button
+                  whileHover={hoverSubtle}
+                  whileTap={tapSubtle}
                   onClick={() => toggleActionStatus(action.id)}
                   className={`px-3 py-1.5 rounded text-xs font-medium border flex items-center space-x-1.5 transition-colors ${
                     isPassed
-                      ? "bg-emerald-950/70 text-emerald-300 border-emerald-700 hover:bg-emerald-900/60"
-                      : "bg-surface-subtle text-zinc-400 border-surface-border hover:bg-surface-border hover:text-zinc-200"
+                      ? "bg-sage/20 text-sage border-sage/50 hover:bg-sage/30"
+                      : "bg-surface-elevated text-text-muted border-surface-border hover:bg-surface-elevated/80 hover:text-text-primary"
                   }`}
                 >
-                  <CheckCircle2 className={`w-3.5 h-3.5 ${isPassed ? "text-emerald-400" : "text-zinc-500"}`} />
+                  <CheckCircle2 className={`w-3.5 h-3.5 ${isPassed ? "text-sage" : "text-text-muted"}`} />
                   <span>{isPassed ? "VERIFIED" : "VERIFY"}</span>
-                </button>
+                </motion.button>
 
                 {!isPassed && !isOverridden && (
-                  <button
+                  <motion.button
+                    whileHover={hoverSubtle}
+                    whileTap={tapSubtle}
                     onClick={() => setOverrideModalAction(action)}
-                    className="px-2.5 py-1.5 rounded text-xs text-amber-400 bg-amber-950/30 border border-amber-800/40 hover:bg-amber-900/40 transition-colors flex items-center space-x-1"
+                    className="px-2.5 py-1.5 rounded text-xs text-risk-warning bg-risk-warning/15 border border-risk-warning/30 hover:bg-risk-warning/25 transition-colors flex items-center space-x-1"
                     title="Staff Engineer Override"
                   >
                     <KeyRound className="w-3 h-3" />
                     <span>OVERRIDE</span>
-                  </button>
+                  </motion.button>
                 )}
 
                 {isOverridden && (
-                  <span className="px-2.5 py-1 rounded text-[11px] font-mono font-semibold bg-amber-950/60 text-amber-300 border border-amber-700">
+                  <span className="px-2.5 py-1 rounded text-[11px] font-mono font-semibold bg-risk-warning/20 text-risk-warning border border-risk-warning/40">
                     OVERRIDDEN
                   </span>
                 )}
@@ -193,68 +197,97 @@ export function VerificationChecklist({
         })}
       </div>
 
-      {/* Override Modal */}
-      {overrideModalAction && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-surface border border-surface-border rounded-lg max-w-lg w-full p-5 space-y-4 shadow-technical-md">
-            <div className="flex items-center space-x-2 text-amber-400 border-b border-surface-border pb-3">
-              <AlertTriangle className="w-5 h-5 text-amber-400" />
-              <h4 className="font-semibold text-sm text-zinc-100">
-                Staff Engineer Override Protocol
-              </h4>
-            </div>
-
-            <div className="text-xs text-zinc-300 space-y-2">
-              <p>
-                You are overriding mandatory verification gate:
-              </p>
-              <div className="p-2.5 rounded bg-surface-subtle border border-surface-border font-mono text-zinc-200">
-                {overrideModalAction.label}
+      {/* Override Modal with Motion AnimatePresence */}
+      <AnimatePresence>
+        {overrideModalAction && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              variants={backdropVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+              onClick={() => setOverrideModalAction(null)}
+            />
+            <motion.div
+              variants={modalVariants}
+              initial="hidden"
+              animate="visible"
+              exit="exit"
+              className="relative z-10 bg-surface-elevated border border-surface-border rounded max-w-lg w-full p-5 space-y-4 shadow-panel-elevated"
+            >
+              <div className="flex items-center justify-between border-b border-surface-border pb-3">
+                <div className="flex items-center space-x-2 text-risk-warning">
+                  <AlertTriangle className="w-5 h-5 text-risk-warning" />
+                  <h4 className="font-semibold text-sm text-text-primary">
+                    Staff Engineer Override Protocol
+                  </h4>
+                </div>
+                <button
+                  onClick={() => setOverrideModalAction(null)}
+                  className="text-text-muted hover:text-text-primary"
+                  aria-label="Close dialog"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-            </div>
 
-            <div className="space-y-3 font-mono text-xs">
-              <div>
-                <label className="text-zinc-400 block mb-1">Authorizing Engineer ID:</label>
-                <input
-                  type="text"
-                  value={overrideEngineer}
-                  onChange={(e) => setOverrideEngineer(e.target.value)}
-                  className="w-full bg-surface-subtle border border-surface-border p-2 rounded text-zinc-200 text-xs focus:outline-none focus:border-brand-hindsight"
-                />
+              <div className="text-xs text-text-secondary space-y-2">
+                <p>
+                  You are overriding mandatory verification gate for deployment{" "}
+                  <span className="font-mono text-signal">{deploymentId}</span>:
+                </p>
+                <div className="p-2.5 rounded bg-surface border border-surface-border font-mono text-text-primary">
+                  {overrideModalAction.label}
+                </div>
               </div>
 
-              <div>
-                <label className="text-zinc-400 block mb-1">
-                  Incident Mitigation / Justification Note:
-                </label>
-                <textarea
-                  rows={3}
-                  value={overrideJustification}
-                  onChange={(e) => setOverrideJustification(e.target.value)}
-                  placeholder="e.g. Backfilled database on separate maintenance thread. Rollback runbook tested and verified in hotfix pod."
-                  className="w-full bg-surface-subtle border border-surface-border p-2 rounded text-zinc-200 text-xs focus:outline-none focus:border-brand-hindsight font-sans"
-                />
-              </div>
-            </div>
+              <div className="space-y-3 font-mono text-xs">
+                <div>
+                  <label className="text-text-muted block mb-1">Authorizing Engineer ID:</label>
+                  <input
+                    type="text"
+                    value={overrideEngineer}
+                    onChange={(e) => setOverrideEngineer(e.target.value)}
+                    className="w-full bg-surface border border-surface-border p-2 rounded text-text-primary text-xs focus:outline-none focus:border-signal"
+                  />
+                </div>
 
-            <div className="flex justify-end space-x-2 pt-2 border-t border-surface-border font-mono text-xs">
-              <button
-                onClick={() => setOverrideModalAction(null)}
-                className="px-3 py-1.5 rounded text-zinc-400 hover:text-white border border-surface-border hover:bg-surface-subtle"
-              >
-                CANCEL
-              </button>
-              <button
-                onClick={handleApplyOverride}
-                className="px-4 py-1.5 rounded bg-amber-600 hover:bg-amber-500 text-black font-semibold"
-              >
-                CONFIRM OVERRIDE
-              </button>
-            </div>
+                <div>
+                  <label className="text-text-muted block mb-1">
+                    Incident Mitigation / Justification Note:
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={overrideJustification}
+                    onChange={(e) => setOverrideJustification(e.target.value)}
+                    placeholder="e.g. Backfilled database on separate maintenance thread. Rollback verified on staging."
+                    className="w-full bg-surface border border-surface-border p-2 rounded text-text-primary text-xs focus:outline-none focus:border-signal font-sans"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-2 border-t border-surface-border font-mono text-xs">
+                <button
+                  onClick={() => setOverrideModalAction(null)}
+                  className="px-3 py-1.5 rounded text-text-muted hover:text-text-primary border border-surface-border"
+                >
+                  CANCEL
+                </button>
+                <motion.button
+                  whileHover={hoverSubtle}
+                  whileTap={tapSubtle}
+                  onClick={handleApplyOverride}
+                  className="px-4 py-1.5 rounded bg-risk-warning text-black font-semibold"
+                >
+                  CONFIRM OVERRIDE
+                </motion.button>
+              </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </div>
   );
 }
+

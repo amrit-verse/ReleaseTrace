@@ -1,38 +1,40 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { motion } from "motion/react";
 import {
   Sparkles,
   BrainCircuit,
-  ArrowRight,
   ShieldAlert,
   CheckCircle2,
-  AlertTriangle,
   RotateCcw,
   FileCode,
   Server,
-  Zap,
   Check,
-  TrendingDown,
-  Layers,
-  ChevronRight,
-  Lock,
 } from "lucide-react";
 import { mockLearningLabScenarios } from "@/data/mockData";
-import { LearningLabScenario, HindsightMemory } from "@/types";
+import { HindsightMemory } from "@/types";
 import {
   evaluateReleaseRisk,
-  getActiveMemories,
   retainNewMemory,
   resetMemoriesToDefault,
   EngineAssessmentResult,
 } from "@/lib/memoryEngine";
-import { RiskBadge, StatusBadge } from "@/components/ui/StatusBadge";
+import { RiskBadge } from "@/components/ui/StatusBadge";
 import { HindsightMemoryCard } from "@/components/ui/HindsightMemoryCard";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { useToast } from "@/components/ui/ToastProvider";
+import {
+  fadeInVariants,
+  staggerContainer,
+  hoverSubtle,
+  tapSubtle,
+} from "@/lib/motion";
 
 export default function LearningLabPage() {
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>("scenario-postgres-lock");
   const [engineMode, setEngineMode] = useState<"LIVE_MEMORY_ENGINE" | "FIXTURE">("LIVE_MEMORY_ENGINE");
+  const { success, warning, info } = useToast();
 
   // Step state: 1: Cold, 2: Retention, 3: Warm
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -68,6 +70,7 @@ export default function LearningLabPage() {
     setColdResult(null);
     setWarmResult(null);
     setEvaluationLog(["Memory bank purged. Baseline tabula rasa restored."]);
+    info("Lab Reset", "Memory bank reset to canonical baseline.");
   };
 
   // Step 1: Run Cold Assessment
@@ -75,7 +78,7 @@ export default function LearningLabPage() {
     setIsEvaluating(true);
     setEvaluationLog([
       "Initializing Pre-flight CI Gate Scanner...",
-      "Analyzing AST of SQL migration...",
+      "Analyzing AST of Prisma/SQL migration...",
       "Validating schema syntax against PostgreSQL 15 grammar: VALID",
       "Querying Hindsight Memory Engine for semantic matches...",
       "Index match count: 0 (No prior memory found)",
@@ -112,6 +115,7 @@ export default function LearningLabPage() {
         ...prev,
         "Cold Assessment Complete: Blindspot detected! Risk marked NOMINAL due to lack of historical memory.",
       ]);
+      warning("Cold Run Completed", "Deployment passed static checks but missed hidden production lock hazard.");
     }, 600);
   };
 
@@ -159,6 +163,7 @@ export default function LearningLabPage() {
         ...prev,
         `Retained memory verified: ${retained.id} permanently active in memory bank.`,
       ]);
+      success("Incident Retained", `Lesson permanently committed to Hindsight (${retained.id}).`);
     }, 700);
   };
 
@@ -230,110 +235,116 @@ export default function LearningLabPage() {
         ...prev,
         "Warm Assessment Complete: Catastrophic outage successfully intercepted & blocked!",
       ]);
+      success("Outage Prevented", "Release blocked before production rollout using Hindsight precedent!");
     }, 700);
   };
 
   return (
-    <div className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto w-full font-sans">
+    <motion.div
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+      className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto w-full font-sans"
+    >
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-surface-border">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-white flex items-center space-x-2">
-            <span>Hindsight Learning Laboratory</span>
-            <span className="text-xs font-mono font-normal px-2 py-0.5 rounded bg-purple-950/60 text-purple-300 border border-purple-800">
-              BEFORE & AFTER DEMONSTRATION
-            </span>
-          </h1>
-          <p className="text-xs text-zinc-400 font-mono mt-0.5">
-            Demonstrating how AI agents transition from naive static blindspots to proactive memory-driven protection
-          </p>
-        </div>
+      <PageHeader
+        title="Interactive Learning Lab"
+        subtitle="Experience how persistent memory transforms naive pre-flight CI gates into proactive risk prevention."
+        badge={
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-elevated text-signal border border-surface-border">
+            LIVE DEMONSTRATION
+          </span>
+        }
+        actions={
+          <div className="flex items-center space-x-2 font-mono text-xs">
+            <div className="bg-surface-elevated border border-surface-border rounded p-0.5 flex items-center">
+              <button
+                onClick={() => setEngineMode("LIVE_MEMORY_ENGINE")}
+                className={`px-2.5 py-1 rounded text-[11px] transition-colors ${
+                  engineMode === "LIVE_MEMORY_ENGINE"
+                    ? "bg-signal text-canvas font-semibold"
+                    : "text-text-muted hover:text-text-primary"
+                }`}
+              >
+                Live Engine
+              </button>
+              <button
+                onClick={() => setEngineMode("FIXTURE")}
+                className={`px-2.5 py-1 rounded text-[11px] transition-colors ${
+                  engineMode === "FIXTURE"
+                    ? "bg-surface text-text-primary font-semibold"
+                    : "text-text-muted hover:text-text-primary"
+                }`}
+              >
+                Benchmarks
+              </button>
+            </div>
 
-        {/* Engine Mode Toggle & Reset */}
-        <div className="flex items-center space-x-2 font-mono text-xs">
-          <div className="bg-surface-subtle border border-surface-border rounded p-0.5 flex items-center">
-            <button
-              onClick={() => setEngineMode("LIVE_MEMORY_ENGINE")}
-              className={`px-2.5 py-1 rounded text-[11px] transition-colors ${
-                engineMode === "LIVE_MEMORY_ENGINE"
-                  ? "bg-purple-900/70 text-purple-200 font-semibold"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
+            <motion.button
+              whileHover={hoverSubtle}
+              whileTap={tapSubtle}
+              onClick={handleResetLab}
+              className="px-2.5 py-1 rounded bg-surface-elevated hover:bg-surface-elevated/80 text-text-secondary hover:text-text-primary border border-surface-border flex items-center space-x-1"
             >
-              Live Semantic Engine
-            </button>
-            <button
-              onClick={() => setEngineMode("FIXTURE")}
-              className={`px-2.5 py-1 rounded text-[11px] transition-colors ${
-                engineMode === "FIXTURE"
-                  ? "bg-zinc-800 text-zinc-200 font-semibold"
-                  : "text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              Benchmark Fixtures
-            </button>
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset</span>
+            </motion.button>
           </div>
+        }
+      />
 
-          <button
-            onClick={handleResetLab}
-            className="px-2.5 py-1 rounded bg-surface-subtle hover:bg-surface-border text-zinc-400 hover:text-zinc-200 border border-surface-border flex items-center space-x-1"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Lab</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Scenario Selection Selector */}
+      {/* Scenario Selector */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono text-xs">
         {mockLearningLabScenarios.map((scen) => {
           const isSelected = scen.id === selectedScenarioId;
           return (
-            <button
+            <motion.button
               key={scen.id}
+              whileHover={hoverSubtle}
+              whileTap={tapSubtle}
               onClick={() => handleScenarioChange(scen.id)}
-              className={`p-3 rounded-lg border text-left transition-all ${
+              className={`p-3 rounded border text-left transition-all ${
                 isSelected
-                  ? "bg-surface-muted border-brand-hindsight shadow-glow-hindsight text-white"
-                  : "bg-surface border-surface-border text-zinc-400 hover:border-zinc-700 hover:text-zinc-200"
+                  ? "bg-surface-elevated border-signal shadow-panel text-text-primary"
+                  : "bg-surface border-surface-border text-text-muted hover:border-surface-border/80 hover:text-text-secondary"
               }`}
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-xs text-zinc-200">{scen.service}</span>
-                <span className="text-[10px] text-zinc-500 font-mono">
-                  {scen.commitHash}
+                <span className="font-semibold text-xs text-text-primary">{scen.service}</span>
+                <span className="text-[10px] text-signal/80 font-mono">
+                  {scen.commitHash.substring(0, 8)}
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-300 font-sans line-clamp-2">
+              <p className="text-[11px] text-text-secondary font-sans line-clamp-2">
                 {scen.title}
               </p>
-            </button>
+            </motion.button>
           );
         })}
       </div>
 
       {/* Interactive 3-Step Progression Bar */}
-      <div className="bg-surface border border-surface-border rounded-lg p-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono">
+      <div className="bg-surface border border-surface-border rounded p-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono shadow-panel">
         {/* Step 1 */}
         <div
           className={`p-3 rounded border flex items-center space-x-3 ${
             currentStep === 1
-              ? "bg-surface-subtle border-brand-hindsight text-white"
+              ? "bg-surface-elevated border-signal text-text-primary"
               : coldResult
-              ? "bg-surface-subtle/50 border-surface-border text-zinc-400"
-              : "border-surface-border/50 text-zinc-500"
+              ? "bg-surface-elevated/50 border-surface-border text-text-muted"
+              : "border-surface-border/50 text-text-muted"
           }`}
         >
           <div
             className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
-              coldResult ? "bg-emerald-950 text-emerald-400 border border-emerald-800" : "bg-zinc-800 text-zinc-300"
+              coldResult ? "bg-sage/20 text-sage border border-sage/40" : "bg-surface-elevated text-text-muted border border-surface-border"
             }`}
           >
             {coldResult ? <Check className="w-3.5 h-3.5" /> : "1"}
           </div>
           <div>
-            <div className="font-semibold text-zinc-200">State 1: Cold Run</div>
-            <div className="text-[10px] text-zinc-500">Without Hindsight Memory</div>
+            <div className="font-semibold text-text-primary">Phase 1: Cold Run</div>
+            <div className="text-[10px] text-text-muted">Without Hindsight Memory</div>
           </div>
         </div>
 
@@ -341,22 +352,22 @@ export default function LearningLabPage() {
         <div
           className={`p-3 rounded border flex items-center space-x-3 ${
             currentStep === 2
-              ? "bg-surface-subtle border-brand-hindsight text-white"
+              ? "bg-surface-elevated border-signal text-text-primary"
               : hasRetained
-              ? "bg-surface-subtle/50 border-surface-border text-zinc-400"
-              : "border-surface-border/50 text-zinc-500"
+              ? "bg-surface-elevated/50 border-surface-border text-text-muted"
+              : "border-surface-border/50 text-text-muted"
           }`}
         >
           <div
             className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
-              hasRetained ? "bg-purple-950 text-purple-300 border border-purple-800" : "bg-zinc-800 text-zinc-300"
+              hasRetained ? "bg-signal/20 text-signal border border-signal/40" : "bg-surface-elevated text-text-muted border border-surface-border"
             }`}
           >
             {hasRetained ? <Check className="w-3.5 h-3.5" /> : "2"}
           </div>
           <div>
-            <div className="font-semibold text-zinc-200">State 2: Incident Retention</div>
-            <div className="text-[10px] text-zinc-500">Post-Mortem Indexing</div>
+            <div className="font-semibold text-text-primary">Phase 2: Retention</div>
+            <div className="text-[10px] text-text-muted">Post-Mortem Indexing</div>
           </div>
         </div>
 
@@ -364,22 +375,22 @@ export default function LearningLabPage() {
         <div
           className={`p-3 rounded border flex items-center space-x-3 ${
             currentStep === 3
-              ? "bg-surface-subtle border-brand-hindsight text-white"
+              ? "bg-surface-elevated border-signal text-text-primary"
               : warmResult
-              ? "bg-surface-subtle/50 border-surface-border text-zinc-400"
-              : "border-surface-border/50 text-zinc-500"
+              ? "bg-surface-elevated/50 border-surface-border text-text-muted"
+              : "border-surface-border/50 text-text-muted"
           }`}
         >
           <div
             className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs ${
-              warmResult ? "bg-red-950 text-red-400 border border-red-800" : "bg-zinc-800 text-zinc-300"
+              warmResult ? "bg-risk-critical/20 text-risk-critical border border-risk-critical/40" : "bg-surface-elevated text-text-muted border border-surface-border"
             }`}
           >
             {warmResult ? <Check className="w-3.5 h-3.5" /> : "3"}
           </div>
           <div>
-            <div className="font-semibold text-zinc-200">State 3: Warm Run</div>
-            <div className="text-[10px] text-zinc-500">Recalled Incident & Intercepted</div>
+            <div className="font-semibold text-text-primary">Phase 3: Warm Run</div>
+            <div className="text-[10px] text-text-muted">Intercepted with Precedent</div>
           </div>
         </div>
       </div>
@@ -387,150 +398,163 @@ export default function LearningLabPage() {
       {/* Code Diff & Environment Disparity Preview */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Code Diff */}
-        <div className="bg-surface border border-surface-border rounded-lg overflow-hidden font-mono text-xs">
-          <div className="p-3 bg-surface-subtle border-b border-surface-border flex items-center justify-between">
-            <span className="text-zinc-300 flex items-center gap-1.5 font-semibold">
-              <FileCode className="w-4 h-4 text-zinc-400" />
+        <div className="bg-surface border border-surface-border rounded overflow-hidden font-mono text-xs shadow-panel">
+          <div className="p-3 bg-surface-elevated border-b border-surface-border flex items-center justify-between">
+            <span className="text-text-primary flex items-center gap-1.5 font-semibold">
+              <FileCode className="w-4 h-4 text-text-muted" />
               <span>{scenario.codeDiff.filename}</span>
             </span>
-            <span className="text-[10px] text-zinc-500">{scenario.commitHash}</span>
+            <span className="text-[10px] text-signal/80">{scenario.commitHash.substring(0, 8)}</span>
           </div>
-          <pre className="p-4 text-emerald-400 overflow-x-auto bg-[#07080b] leading-relaxed">
+          <pre className="p-4 text-sage overflow-x-auto bg-canvas leading-relaxed text-xs">
             <code>{scenario.codeDiff.diffSnippet}</code>
           </pre>
         </div>
 
         {/* Environment Scale Disparity (The silent blindspot) */}
-        <div className="bg-surface border border-surface-border rounded-lg p-4 space-y-3 font-sans text-xs">
+        <div className="bg-surface border border-surface-border rounded p-4 space-y-3 font-sans text-xs shadow-panel">
           <div className="flex items-center space-x-2 border-b border-surface-border pb-2">
-            <Server className="w-4 h-4 text-amber-400" />
-            <h3 className="font-semibold text-zinc-100">
+            <Server className="w-4 h-4 text-risk-warning" />
+            <h3 className="font-semibold text-text-primary">
               The Latent Production Blindspot
             </h3>
           </div>
 
-          <div className="space-y-2 text-zinc-300 font-mono text-[11px]">
-            <div className="p-2.5 rounded bg-surface-subtle border border-surface-border space-y-1">
-              <span className="text-zinc-500 uppercase text-[10px]">Testing Environment:</span>
-              <p className="text-zinc-200">{scenario.environmentSetup.testEnv}</p>
+          <div className="space-y-2 text-text-secondary font-mono text-[11px]">
+            <div className="p-2.5 rounded bg-surface-elevated border border-surface-border space-y-1">
+              <span className="text-text-muted uppercase text-[10px]">Testing Environment:</span>
+              <p className="text-text-primary">{scenario.environmentSetup.testEnv}</p>
             </div>
 
-            <div className="p-2.5 rounded bg-surface-subtle border border-amber-900/50 space-y-1">
-              <span className="text-amber-400 uppercase text-[10px]">Production Target:</span>
-              <p className="text-zinc-200">{scenario.environmentSetup.targetEnv}</p>
+            <div className="p-2.5 rounded bg-surface-elevated border border-risk-warning/30 space-y-1">
+              <span className="text-risk-warning uppercase text-[10px]">Production Target:</span>
+              <p className="text-text-primary">{scenario.environmentSetup.targetEnv}</p>
             </div>
           </div>
 
-          <p className="text-zinc-400 text-xs leading-relaxed italic">
+          <p className="text-text-muted text-xs leading-relaxed italic">
             &ldquo;{scenario.environmentSetup.discrepancy}&rdquo;
           </p>
         </div>
       </div>
 
       {/* Main Execution Area */}
-      <div className="bg-surface border border-surface-border rounded-lg p-5 space-y-5">
+      <div className="bg-surface border border-surface-border rounded p-5 space-y-5 shadow-panel">
         {/* Step 1 Control: Cold Run */}
         {!coldResult && (
-          <div className="p-4 rounded-lg bg-surface-subtle border border-surface-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <motion.div
+            variants={fadeInVariants}
+            className="p-4 rounded bg-surface-elevated border border-surface-border flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          >
             <div className="space-y-1">
-              <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
+              <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
                 <span>Phase 1: Run Naive Pre-Flight Assessment (Cold State)</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface text-text-muted border border-surface-border">
                   MEMORY BANK: 0 MATCHES
                 </span>
               </h3>
-              <p className="text-xs text-zinc-400 font-sans">
-                Notice that without Hindsight memory, standard linters and tests report all green.
+              <p className="text-xs text-text-muted font-sans">
+                Without historical memory, static checks and unit tests report clean nominal status.
               </p>
             </div>
 
-            <button
+            <motion.button
+              whileHover={hoverSubtle}
+              whileTap={tapSubtle}
               onClick={runColdAssessment}
               disabled={isEvaluating}
-              className="px-4 py-2 rounded bg-zinc-200 hover:bg-white text-zinc-950 font-mono text-xs font-semibold shrink-0 transition-colors"
+              className="px-4 py-2 rounded bg-signal text-canvas font-mono text-xs font-semibold shrink-0 transition-colors shadow-panel"
             >
               {isEvaluating ? "Evaluating..." : "Run Cold Assessment"}
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         )}
 
         {/* Cold Result Rendered */}
         {coldResult && (
           <div className="space-y-4">
-            <div className="p-4 rounded-lg bg-surface-subtle border border-surface-border space-y-3 font-mono text-xs">
+            <motion.div
+              variants={fadeInVariants}
+              className="p-4 rounded bg-surface-elevated border border-surface-border space-y-3 font-mono text-xs"
+            >
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-border pb-2">
                 <div className="flex items-center space-x-2">
-                  <span className="text-zinc-400 font-semibold">COLD ASSESSMENT OUTCOME:</span>
+                  <span className="text-text-muted font-semibold">COLD ASSESSMENT OUTCOME:</span>
                   <RiskBadge classification={coldResult.riskClassification} size="sm" />
-                  <span className="text-zinc-300 font-bold">{coldResult.riskScore} / 100</span>
+                  <span className="text-text-primary font-bold">{coldResult.riskScore} / 100</span>
                 </div>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                <span className="text-[10px] px-2 py-0.5 rounded bg-surface text-text-muted border border-surface-border">
                   SOURCE: {coldResult.source}
                 </span>
               </div>
 
-              <div className="space-y-1 font-sans text-xs text-zinc-300">
+              <div className="space-y-1 font-sans text-xs text-text-secondary">
                 <p>
-                  <strong>Why it passed: </strong>
+                  <strong className="text-text-primary">Why it passed: </strong>
                   {scenario.coldRun.explanation}
                 </p>
               </div>
 
               {/* Catastrophic Simulated Production Failure Warning */}
-              <div className="p-3 rounded bg-red-950/40 border border-red-800 text-red-300 space-y-1 font-sans text-xs">
-                <div className="flex items-center space-x-1.5 font-bold font-mono text-red-400">
+              <div className="p-3 rounded bg-risk-critical/15 border border-risk-critical/40 text-risk-critical space-y-1 font-sans text-xs">
+                <div className="flex items-center space-x-1.5 font-bold font-mono text-risk-critical">
                   <ShieldAlert className="w-4 h-4" />
-                  <span>CATASTROPHIC OUTAGE EXPERIENCED IN PRODUCTION</span>
+                  <span>SIMULATED PRODUCTION OUTAGE OCCURRED</span>
                 </div>
-                <p>{scenario.coldRun.productionOutcome}</p>
+                <p className="text-text-primary">{scenario.coldRun.productionOutcome}</p>
               </div>
-            </div>
+            </motion.div>
 
             {/* Step 2 Trigger: Retain Incident into Hindsight */}
             {!hasRetained && (
-              <div className="p-5 rounded-lg bg-purple-950/20 border border-purple-800/60 space-y-3 font-sans">
+              <motion.div
+                variants={fadeInVariants}
+                className="p-5 rounded bg-surface-elevated border border-signal/40 space-y-3 font-sans shadow-panel"
+              >
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2 text-purple-300">
-                    <BrainCircuit className="w-5 h-5 text-purple-400" />
-                    <h4 className="font-semibold text-sm">
+                  <div className="flex items-center space-x-2 text-signal">
+                    <BrainCircuit className="w-5 h-5 text-signal" />
+                    <h4 className="font-semibold text-sm text-text-primary">
                       Phase 2: Post-Mortem Retrospective & Memory Retention
                     </h4>
                   </div>
-                  <span className="text-xs font-mono text-purple-400 font-bold">
+                  <span className="text-xs font-mono text-signal font-bold">
                     {scenario.retainedIncident.incidentTicket}
                   </span>
                 </div>
 
-                <p className="text-xs text-zinc-300">
-                  Engineers completed the SEV-1 post-mortem. Now retain this hard-learned lesson into the Hindsight Memory Engine so no future engineer repeats it.
+                <p className="text-xs text-text-secondary">
+                  The engineering team completed the root cause analysis. Index this experience into the project&apos;s Hindsight memory bank so subsequent releases avoid the same pitfall.
                 </p>
 
-                <div className="bg-surface/80 p-3 rounded border border-surface-border font-mono text-xs space-y-2 text-zinc-300">
+                <div className="bg-surface p-3 rounded border border-surface-border font-mono text-xs space-y-2 text-text-secondary">
                   <div>
-                    <strong className="text-purple-400">Root Cause: </strong>
-                    <span>{scenario.retainedIncident.rootCause}</span>
+                    <strong className="text-signal">Root Cause: </strong>
+                    <span className="text-text-primary">{scenario.retainedIncident.rootCause}</span>
                   </div>
                   <div>
-                    <strong className="text-amber-400">Failed Approaches (DO NOT REPEAT): </strong>
-                    <span>{scenario.retainedIncident.failedApproaches.join(" | ")}</span>
+                    <strong className="text-risk-warning">Failed Approaches (DO NOT REPEAT): </strong>
+                    <span className="text-text-primary">{scenario.retainedIncident.failedApproaches.join(" | ")}</span>
                   </div>
                   <div>
-                    <strong className="text-emerald-400">Permanent Resolution: </strong>
-                    <span>{scenario.retainedIncident.resolution}</span>
+                    <strong className="text-sage">Permanent Resolution: </strong>
+                    <span className="text-text-primary">{scenario.retainedIncident.resolution}</span>
                   </div>
                 </div>
 
                 <div className="flex justify-end pt-2">
-                  <button
+                  <motion.button
+                    whileHover={hoverSubtle}
+                    whileTap={tapSubtle}
                     onClick={retainIncident}
                     disabled={isEvaluating}
-                    className="px-4 py-2 rounded bg-brand-hindsight hover:bg-brand-hindsight-dark text-white font-mono text-xs font-semibold flex items-center space-x-1.5 shadow-glow-hindsight transition-colors"
+                    className="px-4 py-2 rounded bg-signal text-canvas font-mono text-xs font-semibold flex items-center space-x-1.5 shadow-panel transition-colors"
                   >
                     <Sparkles className="w-4 h-4" />
                     <span>{isEvaluating ? "Retaining into Hindsight..." : "Retain Incident Memory to Hindsight"}</span>
-                  </button>
+                  </motion.button>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         )}
@@ -538,55 +562,63 @@ export default function LearningLabPage() {
         {/* Step 3: Warm Run (After Retention) */}
         {hasRetained && (
           <div className="space-y-4 pt-2">
-            <div className="p-3 bg-emerald-950/30 border border-emerald-800/50 rounded flex items-center justify-between text-xs font-mono text-emerald-400">
+            <div className="p-3 bg-sage/15 border border-sage/40 rounded flex items-center justify-between text-xs font-mono text-sage">
               <span className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <CheckCircle2 className="w-4 h-4 text-sage" />
                 <span>Memory Verified: Successfully Indexed in Hindsight Cluster</span>
               </span>
-              <span className="text-zinc-400">Memory ID: {retainedMemoryResult?.id}</span>
+              <span className="text-text-muted">Memory ID: {retainedMemoryResult?.id}</span>
             </div>
 
             {!warmResult && (
-              <div className="p-4 rounded-lg bg-surface-subtle border border-surface-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <motion.div
+                variants={fadeInVariants}
+                className="p-4 rounded bg-surface-elevated border border-surface-border flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+              >
                 <div className="space-y-1">
-                  <h3 className="text-sm font-semibold text-zinc-100 flex items-center gap-2">
-                    <span>Phase 3: Run Similar Release Pre-Flight (Post-Learning)</span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">
+                  <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
+                    <span>Phase 3: Run Similar Release Pre-Flight (Warm State)</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-signal/20 text-signal border border-signal/40">
                       HINDSIGHT ACTIVE
                     </span>
                   </h3>
-                  <p className="text-xs text-zinc-400 font-sans">
-                    Now re-assess with the newly learned Hindsight memory bank in place.
+                  <p className="text-xs text-text-muted font-sans">
+                    Re-assess a subsequent release candidate with identical database patterns.
                   </p>
                 </div>
 
-                <button
+                <motion.button
+                  whileHover={hoverSubtle}
+                  whileTap={tapSubtle}
                   onClick={runWarmAssessment}
                   disabled={isEvaluating}
-                  className="px-4 py-2 rounded bg-purple-600 hover:bg-purple-500 text-white font-mono text-xs font-semibold shrink-0 transition-colors shadow-glow-hindsight"
+                  className="px-4 py-2 rounded bg-signal text-canvas font-mono text-xs font-semibold shrink-0 transition-colors shadow-panel"
                 >
                   {isEvaluating ? "Evaluating with Hindsight..." : "Run Warm Assessment"}
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
             )}
 
             {/* Warm Assessment Result */}
             {warmResult && (
-              <div className="p-5 rounded-lg bg-red-950/20 border border-red-800/80 space-y-4 font-sans shadow-technical-md">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-red-800/40 pb-3">
+              <motion.div
+                variants={fadeInVariants}
+                className="p-5 rounded bg-surface-elevated border border-risk-critical/50 space-y-4 font-sans shadow-panel-elevated"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-surface-border pb-3">
                   <div className="flex items-center space-x-2">
                     <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-risk-critical opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-risk-critical"></span>
                     </span>
-                    <span className="font-mono text-xs font-bold text-red-400">
+                    <span className="font-mono text-xs font-bold text-risk-critical">
                       OUTAGE INTERCEPTED: RELEASE AUTOMATICALLY BLOCKED
                     </span>
                     <RiskBadge classification={warmResult.riskClassification} size="sm" />
                   </div>
                   <div className="flex items-center space-x-2 font-mono text-xs">
-                    <span className="text-red-400 font-bold">Risk Score: {warmResult.riskScore} / 100</span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400">
+                    <span className="text-risk-critical font-bold">Risk Score: {warmResult.riskScore} / 100</span>
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-surface text-text-muted border border-surface-border">
                       SOURCE: {warmResult.source}
                     </span>
                   </div>
@@ -595,7 +627,7 @@ export default function LearningLabPage() {
                 {/* Recalled Memory Display */}
                 {warmResult.recalledMemories.length > 0 && (
                   <div className="space-y-2">
-                    <span className="text-xs font-mono uppercase text-purple-400 flex items-center gap-1.5">
+                    <span className="text-xs font-mono uppercase text-signal flex items-center gap-1.5">
                       <BrainCircuit className="w-4 h-4" />
                       <span>Recalled Historical Memory from Hindsight</span>
                     </span>
@@ -604,30 +636,30 @@ export default function LearningLabPage() {
                 )}
 
                 {/* Proactive Checklists and Blocked Blast Radius */}
-                <div className="bg-surface/80 p-4 rounded border border-surface-border space-y-3 text-xs font-mono">
-                  <div className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                <div className="bg-surface p-4 rounded border border-surface-border space-y-3 text-xs font-mono">
+                  <div className="text-sage font-semibold flex items-center gap-1.5">
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Averted Blast Radius</span>
                   </div>
-                  <p className="text-zinc-300 font-sans text-xs">
+                  <p className="text-text-primary font-sans text-xs">
                     {scenario.warmRun.preventedBlastRadius}
                   </p>
 
                   <div className="space-y-1.5 pt-2 border-t border-surface-border">
-                    <span className="text-zinc-400 uppercase text-[11px] block">
+                    <span className="text-text-muted uppercase text-[11px] block">
                       Enforced Pre-Flight Action Matrix:
                     </span>
-                    <ul className="space-y-1 text-zinc-300 text-[11px]">
+                    <ul className="space-y-1 text-text-secondary text-[11px]">
                       {warmResult.preventativeActions.map((action, idx) => (
                         <li key={idx} className="flex items-start space-x-2">
-                          <span className="text-purple-400 font-bold">✓</span>
+                          <span className="text-signal font-bold">✓</span>
                           <span>{action}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         )}
@@ -635,16 +667,16 @@ export default function LearningLabPage() {
 
       {/* Live Engine Diagnostic Log Console */}
       {evaluationLog.length > 0 && (
-        <div className="bg-[#050608] border border-surface-border rounded-lg p-3 font-mono text-xs space-y-1">
-          <div className="text-zinc-500 text-[10px] flex items-center justify-between pb-1 border-b border-zinc-900">
+        <div className="bg-canvas border border-surface-border rounded p-3 font-mono text-xs space-y-1">
+          <div className="text-text-muted text-[10px] flex items-center justify-between pb-1 border-b border-surface-border">
             <span>ENGINE EXECUTION TRACE LOG</span>
-            <span>HINDSIGHT V2.4-ACTIVE</span>
+            <span className="text-signal">HINDSIGHT-ACTIVE</span>
           </div>
-          <div className="space-y-0.5 pt-1 text-zinc-400">
+          <div className="space-y-0.5 pt-1 text-text-secondary">
             {evaluationLog.map((log, idx) => (
               <div key={idx} className="flex items-start space-x-2">
-                <span className="text-zinc-600 select-none">&gt;</span>
-                <span className={log.includes("BLOCKED") || log.includes("CATASTROPHIC") ? "text-red-400" : log.includes("Retained") || log.includes("Warm") ? "text-purple-300" : "text-zinc-400"}>
+                <span className="text-text-muted select-none">&gt;</span>
+                <span className={log.includes("BLOCKED") || log.includes("CATASTROPHIC") ? "text-risk-critical" : log.includes("Retained") || log.includes("Warm") ? "text-signal" : "text-text-secondary"}>
                   {log}
                 </span>
               </div>
@@ -652,6 +684,7 @@ export default function LearningLabPage() {
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
+

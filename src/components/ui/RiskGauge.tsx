@@ -11,23 +11,22 @@ interface RiskGaugeProps {
 export function RiskGauge({ score, classification, showDetails = true }: RiskGaugeProps) {
   // Determine color theme based on score
   const getColor = (s: number) => {
-    if (s >= 85) return "text-red-500 bg-red-500";
-    if (s >= 65) return "text-orange-500 bg-orange-500";
-    if (s >= 40) return "text-amber-500 bg-amber-500";
-    return "text-emerald-500 bg-emerald-500";
+    if (s >= 85) return "text-risk-critical bg-risk-critical";
+    if (s >= 65) return "text-risk-warning bg-risk-warning";
+    if (s >= 40) return "text-risk-elevated bg-risk-elevated";
+    return "text-sage bg-sage";
   };
 
   const colorClass = getColor(score);
   const textColor = colorClass.split(" ")[0];
-  const bgColor = colorClass.split(" ")[1];
 
   // 10-step segmented bar
   const segments = Array.from({ length: 10 }, (_, i) => i * 10);
 
   return (
-    <div className="bg-surface-subtle border border-surface-border rounded-lg p-4 font-mono">
+    <div className="bg-surface border border-surface-border rounded p-4 font-mono shadow-panel">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-zinc-400 uppercase tracking-wider">
+        <span className="text-xs text-text-muted uppercase tracking-wider">
           Risk Assessment Index
         </span>
         <RiskBadge classification={classification} size="sm" />
@@ -37,7 +36,7 @@ export function RiskGauge({ score, classification, showDetails = true }: RiskGau
         <span className={`text-3xl font-bold tracking-tight ${textColor}`}>
           {score}
         </span>
-        <span className="text-zinc-500 text-sm">/ 100</span>
+        <span className="text-text-muted text-sm">/ 100</span>
       </div>
 
       {/* Technical Segmented Meter */}
@@ -47,16 +46,16 @@ export function RiskGauge({ score, classification, showDetails = true }: RiskGau
           return (
             <div
               key={idx}
-              className={`h-2 rounded-xs transition-all ${
+              className={`h-2 rounded-[2px] transition-all ${
                 isActive
                   ? idx >= 8
-                    ? "bg-red-500"
+                    ? "bg-risk-critical"
                     : idx >= 6
-                    ? "bg-orange-500"
+                    ? "bg-risk-warning"
                     : idx >= 4
-                    ? "bg-amber-500"
-                    : "bg-emerald-500"
-                  : "bg-zinc-800/80"
+                    ? "bg-risk-elevated"
+                    : "bg-sage"
+                  : "bg-surface-elevated"
               }`}
             />
           );
@@ -64,7 +63,7 @@ export function RiskGauge({ score, classification, showDetails = true }: RiskGau
       </div>
 
       {showDetails && (
-        <div className="flex justify-between items-center text-[10px] text-zinc-500 pt-1 border-t border-surface-border/50">
+        <div className="flex justify-between items-center text-[10px] text-text-muted pt-1 border-t border-surface-border">
           <span>0 (SAFE)</span>
           <span>THRESHOLD: 70</span>
           <span>100 (CRITICAL)</span>
@@ -73,3 +72,4 @@ export function RiskGauge({ score, classification, showDetails = true }: RiskGau
     </div>
   );
 }
+

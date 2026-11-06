@@ -23,37 +23,37 @@ export function RiskBadge({ classification, showIcon = true, size = "md" }: Risk
   > = {
     CRITICAL: {
       label: "CRITICAL",
-      bg: "bg-red-950/60",
-      text: "text-red-400",
-      border: "border-red-700/60",
+      bg: "bg-risk-critical/15",
+      text: "text-risk-critical",
+      border: "border-risk-critical/40",
       icon: ShieldAlert,
     },
     HIGH_RISK: {
       label: "HIGH RISK",
-      bg: "bg-orange-950/60",
-      text: "text-orange-400",
-      border: "border-orange-700/60",
+      bg: "bg-risk-warning/15",
+      text: "text-risk-warning",
+      border: "border-risk-warning/40",
       icon: AlertTriangle,
     },
     ELEVATED: {
       label: "ELEVATED",
-      bg: "bg-amber-950/50",
-      text: "text-amber-400",
-      border: "border-amber-700/50",
+      bg: "bg-risk-warning/10",
+      text: "text-risk-elevated",
+      border: "border-risk-warning/30",
       icon: AlertTriangle,
     },
     NOMINAL: {
       label: "NOMINAL",
-      bg: "bg-emerald-950/50",
-      text: "text-emerald-400",
-      border: "border-emerald-700/50",
+      bg: "bg-sage/15",
+      text: "text-sage",
+      border: "border-sage/40",
       icon: CheckCircle,
     },
     VERIFIED: {
       label: "VERIFIED SAFE",
-      bg: "bg-cyan-950/50",
-      text: "text-cyan-400",
-      border: "border-cyan-700/50",
+      bg: "bg-signal/15",
+      text: "text-signal",
+      border: "border-signal/40",
       icon: Sparkles,
     },
   };
@@ -89,44 +89,44 @@ export function StatusBadge({ status, showIcon = true }: StatusBadgeProps) {
   > = {
     passed: {
       label: "PASSED",
-      bg: "bg-emerald-950/50",
-      text: "text-emerald-400",
-      border: "border-emerald-800/50",
+      bg: "bg-sage/15",
+      text: "text-sage",
+      border: "border-sage/40",
       icon: CheckCircle,
     },
     at_risk: {
       label: "AT RISK",
-      bg: "bg-orange-950/50",
-      text: "text-orange-400",
-      border: "border-orange-800/50",
+      bg: "bg-risk-warning/15",
+      text: "text-risk-warning",
+      border: "border-risk-warning/40",
       icon: AlertTriangle,
     },
     blocked: {
       label: "BLOCKED",
-      bg: "bg-red-950/60",
-      text: "text-red-400",
-      border: "border-red-800/60",
+      bg: "bg-risk-critical/15",
+      text: "text-risk-critical",
+      border: "border-risk-critical/40",
       icon: XCircle,
     },
     rolled_back: {
       label: "ROLLED BACK",
-      bg: "bg-zinc-800/80",
-      text: "text-zinc-300",
-      border: "border-zinc-700",
+      bg: "bg-surface-elevated",
+      text: "text-text-secondary",
+      border: "border-surface-border",
       icon: RotateCcw,
     },
     in_progress: {
       label: "IN PROGRESS",
-      bg: "bg-blue-950/50",
-      text: "text-blue-400",
-      border: "border-blue-800/50",
+      bg: "bg-signal/15",
+      text: "text-signal",
+      border: "border-signal/40",
       icon: Clock,
     },
     evaluating: {
       label: "EVALUATING",
-      bg: "bg-purple-950/50",
-      text: "text-purple-300",
-      border: "border-purple-800/50",
+      bg: "bg-signal/10",
+      text: "text-signal",
+      border: "border-signal/30",
       icon: Clock,
     },
   };
@@ -154,24 +154,24 @@ export function SeverityBadge({ severity }: SeverityBadgeProps) {
     { bg: string; text: string; border: string }
   > = {
     CRITICAL: {
-      bg: "bg-red-950/60",
-      text: "text-red-400",
-      border: "border-red-700/60",
+      bg: "bg-risk-critical/15",
+      text: "text-risk-critical",
+      border: "border-risk-critical/40",
     },
     HIGH: {
-      bg: "bg-orange-950/60",
-      text: "text-orange-400",
-      border: "border-orange-700/60",
+      bg: "bg-risk-warning/15",
+      text: "text-risk-warning",
+      border: "border-risk-warning/40",
     },
     MEDIUM: {
-      bg: "bg-amber-950/50",
-      text: "text-amber-400",
-      border: "border-amber-700/50",
+      bg: "bg-risk-warning/10",
+      text: "text-risk-elevated",
+      border: "border-risk-warning/30",
     },
     LOW: {
-      bg: "bg-zinc-800/60",
-      text: "text-zinc-300",
-      border: "border-zinc-700",
+      bg: "bg-surface-elevated",
+      text: "text-text-muted",
+      border: "border-surface-border",
     },
   };
 
@@ -185,3 +185,4 @@ export function SeverityBadge({ severity }: SeverityBadgeProps) {
     </span>
   );
 }
+

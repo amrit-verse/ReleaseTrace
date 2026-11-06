@@ -10,7 +10,7 @@ interface EvidenceCardProps {
 export function EvidenceCard({ evidence }: EvidenceCardProps) {
   if (evidence.length === 0) {
     return (
-      <div className="bg-surface border border-surface-border rounded-lg p-5 text-center font-mono text-xs text-zinc-400">
+      <div className="bg-surface border border-surface-border rounded p-5 text-center font-mono text-xs text-text-muted shadow-panel">
         No anomalous telemetry or hazardous deployment evidence detected.
       </div>
     );
@@ -22,60 +22,60 @@ export function EvidenceCard({ evidence }: EvidenceCardProps) {
         return (
           <div
             key={item.id}
-            className="bg-surface border border-surface-border rounded-lg p-4 space-y-3 hover:border-zinc-700 transition-colors"
+            className="bg-surface border border-surface-border rounded p-4 space-y-3 hover:border-surface-border/80 transition-colors shadow-panel"
           >
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center space-x-2">
                 <AlertOctagon
                   className={`w-4 h-4 ${
                     item.severity === "CRITICAL"
-                      ? "text-red-400"
+                      ? "text-risk-critical"
                       : item.severity === "HIGH"
-                      ? "text-orange-400"
-                      : "text-amber-400"
+                      ? "text-risk-warning"
+                      : "text-risk-elevated"
                   }`}
                 />
-                <span className="font-semibold text-sm text-zinc-100">
+                <span className="font-semibold text-sm text-text-primary">
                   {item.finding}
                 </span>
               </div>
               <div className="flex items-center space-x-2">
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-subtle border border-surface-border text-zinc-400">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-elevated border border-surface-border text-text-secondary">
                   {item.category}
                 </span>
                 <SeverityBadge severity={item.severity} />
               </div>
             </div>
 
-            <p className="text-xs text-zinc-300 leading-relaxed font-mono bg-surface-subtle p-2.5 rounded border border-surface-border/50">
+            <p className="text-xs text-text-primary leading-relaxed font-mono bg-surface-elevated p-2.5 rounded border border-surface-border">
               {item.rawDetails}
             </p>
 
             {item.fileReference && (
-              <div className="flex items-center space-x-2 text-xs font-mono text-zinc-400">
-                <FileCode className="w-3.5 h-3.5 text-zinc-500" />
-                <span className="text-zinc-500">File:</span>
-                <span className="text-zinc-300 bg-surface-subtle px-1.5 py-0.5 rounded border border-surface-border/40">
+              <div className="flex items-center space-x-2 text-xs font-mono text-text-muted">
+                <FileCode className="w-3.5 h-3.5 text-text-muted" />
+                <span className="text-text-muted">File:</span>
+                <span className="text-text-primary bg-surface-elevated px-1.5 py-0.5 rounded border border-surface-border font-mono">
                   {item.fileReference}
                 </span>
               </div>
             )}
 
             {item.telemetryMetric && (
-              <div className="bg-surface-subtle/80 p-2.5 rounded border border-surface-border text-xs font-mono flex flex-wrap items-center justify-between gap-2">
+              <div className="bg-surface-elevated p-2.5 rounded border border-surface-border text-xs font-mono flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center space-x-2">
-                  <TrendingUp className="w-3.5 h-3.5 text-red-400" />
-                  <span className="text-zinc-400">{item.telemetryMetric.name}:</span>
-                  <span className="text-zinc-500 line-through">{item.telemetryMetric.before}</span>
-                  <span className="text-red-400 font-semibold">{item.telemetryMetric.after}</span>
+                  <TrendingUp className="w-3.5 h-3.5 text-risk-critical" />
+                  <span className="text-text-muted">{item.telemetryMetric.name}:</span>
+                  <span className="text-text-muted line-through">{item.telemetryMetric.before}</span>
+                  <span className="text-risk-critical font-semibold">{item.telemetryMetric.after}</span>
                 </div>
-                <span className="text-[11px] font-bold text-red-400 px-1.5 py-0.2 bg-red-950/60 rounded border border-red-800">
+                <span className="text-[10px] font-bold text-risk-critical px-1.5 py-0.2 bg-risk-critical/15 rounded border border-risk-critical/40">
                   {item.telemetryMetric.deviation}
                 </span>
               </div>
             )}
 
-            <div className="text-[11px] text-zinc-400 pt-1 border-t border-surface-border/40 flex items-center justify-between">
+            <div className="text-[11px] text-text-muted pt-1 border-t border-surface-border flex items-center justify-between">
               <span>Impact: {item.impactEstimate}</span>
             </div>
           </div>
@@ -84,3 +84,4 @@ export function EvidenceCard({ evidence }: EvidenceCardProps) {
     </div>
   );
 }
+
