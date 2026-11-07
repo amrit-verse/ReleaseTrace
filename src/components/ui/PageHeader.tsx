@@ -24,31 +24,31 @@ export function PageHeader({
       variants={fadeInVariants}
       initial="hidden"
       animate="visible"
-      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-surface-border"
+      className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200"
     >
       <div>
         {breadcrumbs && breadcrumbs.length > 0 && (
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[11px] font-mono text-text-muted mb-1">
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400 mb-1">
             {breadcrumbs.map((b, idx) => (
               <React.Fragment key={idx}>
                 {idx > 0 && <span>/</span>}
                 {b.href ? (
-                  <a href={b.href} className="hover:text-text-primary transition-colors">
+                  <a href={b.href} className="hover:text-slate-900 transition-colors">
                     {b.label}
                   </a>
                 ) : (
-                  <span className="text-text-secondary">{b.label}</span>
+                  <span className="text-slate-600">{b.label}</span>
                 )}
               </React.Fragment>
             ))}
           </nav>
         )}
         <div className="flex items-center gap-2.5">
-          <h1 className="text-base font-semibold tracking-tight text-text-primary">{title}</h1>
+          <h1 className="text-lg font-bold tracking-tight text-slate-900">{title}</h1>
           {badge}
         </div>
         {subtitle && (
-          <p className="text-xs text-text-secondary mt-0.5 font-sans leading-normal">
+          <p className="text-xs text-slate-600 mt-0.5 font-sans leading-normal">
             {subtitle}
           </p>
         )}

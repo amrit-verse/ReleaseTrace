@@ -15,9 +15,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "ReleaseTrace — Release Risk Intelligence & Hindsight Memory",
+  title: "ReleaseTrace — Release Operations & Incident Recall",
   description:
-    "Enterprise engineering interface for pre-flight deployment risk classification, environment drift comparison, and Hindsight post-mortem memory recall.",
+    "Deterministic pre-flight risk classification, Prisma migration analysis, and Hindsight incident recall.",
 };
 
 export default function RootLayout({
@@ -26,9 +26,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-surface text-on-surface min-h-screen selection:bg-primary-container/20 selection:text-primary`}
       >
         <AppLayout>{children}</AppLayout>
       </body>
