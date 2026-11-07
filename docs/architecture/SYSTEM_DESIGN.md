@@ -18,45 +18,46 @@ The Platform & Integration subsystem is responsible for:
 ```mermaid
 flowchart TD
     subgraph CI["CI/CD Pipeline (GitHub Actions)"]
-        GH_JOB["CI/CD Runner Job\n(build, test, prisma validate)"]
-        META_COLLECT["Metadata Collector\n(Collect Git SHA, Branch, Checksums)"]
-        HMAC_SIGN["HMAC-SHA256 Signer\n(timestamp + raw body)"]
-        GH_JOB --> META_COLLECT --> HMAC_SIGN
+        GH_JOB["CI/CD Runner Job<br/>build, test, prisma validate"]
+        META_COLLECT["Metadata Collector<br/>Collect Git SHA, Branch, Checksums"]
+        HMAC_SIGN["HMAC-SHA256 Signer<br/>timestamp + raw body"]
+        GH_JOB -->|"Collect metadata"| META_COLLECT
+        META_COLLECT -->|"Sign payload"| HMAC_SIGN
     end
 
     subgraph API_INGEST["Platform Ingestion Layer (Next.js App Router)"]
         ENDPOINT["POST /api/webhooks/deployments"]
-        SIG_CHECK["Signature Verifier\n(timingSafeEqual, replay window <= 300s)"]
-        DEDUP["Idempotency Gate\n(Unique idempotencyKey in DB)"]
-        EVENT_STORE["Persist WebhookEvent\n(Status: PENDING)"]
+        SIG_CHECK["Signature Verifier<br/>timingSafeEqual, replay window <= 300s"]
+        DEDUP["Idempotency Gate<br/>Unique idempotencyKey in DB"]
+        EVENT_STORE["Persist WebhookEvent<br/>Status: PENDING"]
         
-        HMAC_SIGN -->|HTTP POST + Headers| ENDPOINT
-        ENDPOINT --> SIG_CHECK
-        SIG_CHECK --> DEDUP
-        DEDUP --> EVENT_STORE
+        HMAC_SIGN -->|"HTTP POST + Headers"| ENDPOINT
+        ENDPOINT -->|"Verify signature"| SIG_CHECK
+        SIG_CHECK -->|"Check idempotency"| DEDUP
+        DEDUP -->|"Record pending event"| EVENT_STORE
     end
 
     subgraph WORKFLOWS["Durable Processing Tier (Inngest)"]
         INNGEST_TRIGGER["inngest.send('releasetrace/deployment.received')"]
-        STEP_NORM["Step 1: Normalize Evidence\n(parse build, test, migrations)"]
-        STEP_VERCEL["Step 2: Correlate Vercel Deployment\n(query by commit SHA, handle pending)"]
-        STEP_PERSIST["Step 3: Upsert Deployment Record\n(Neon PostgreSQL)"]
-        STEP_ASSESS["Step 4: Trigger Assessment Workflow\n(Memory Intelligence Workstream)"]
+        STEP_NORM["Step 1: Normalize Evidence<br/>parse build, test, migrations"]
+        STEP_VERCEL["Step 2: Correlate Vercel Deployment<br/>query by commit SHA, handle pending"]
+        STEP_PERSIST["Step 3: Upsert Deployment Record<br/>Neon PostgreSQL"]
+        STEP_ASSESS["Step 4: Trigger Assessment Workflow<br/>Memory Intelligence Workstream"]
 
-        EVENT_STORE --> INNGEST_TRIGGER
-        INNGEST_TRIGGER --> STEP_NORM
-        STEP_NORM --> STEP_VERCEL
-        STEP_VERCEL --> STEP_PERSIST
-        STEP_PERSIST --> STEP_ASSESS
+        EVENT_STORE -->|"Dispatch durable event"| INNGEST_TRIGGER
+        INNGEST_TRIGGER -->|"Execute step 1"| STEP_NORM
+        STEP_NORM -->|"Execute step 2"| STEP_VERCEL
+        STEP_VERCEL -->|"Execute step 3"| STEP_PERSIST
+        STEP_PERSIST -->|"Execute step 4"| STEP_ASSESS
     end
 
     subgraph STORAGE["Persistence Tier (Neon PostgreSQL + Prisma)"]
-        DB_EVENTS[("WebhookEvent\n(Raw audit payload, processed flag)")]
-        DB_DEPLOYMENTS[("Deployment\n(Normalized commit, state, correlation)")]
-        DB_INTEGRATIONS[("Integration\n(Provider configs, hashed secrets)")]
+        DB_EVENTS[("WebhookEvent<br/>Raw audit payload, processed flag")]
+        DB_DEPLOYMENTS[("Deployment<br/>Normalized commit, state, correlation")]
+        DB_INTEGRATIONS[("Integration<br/>Provider configs, hashed secrets")]
         
-        EVENT_STORE -.-> DB_EVENTS
-        STEP_PERSIST -.-> DB_DEPLOYMENTS
+        EVENT_STORE -.->|"Audit record"| DB_EVENTS
+        STEP_PERSIST -.->|"Deployment record"| DB_DEPLOYMENTS
     end
 ```
 
