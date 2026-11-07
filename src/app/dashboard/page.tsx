@@ -286,12 +286,18 @@ export default function DashboardPage() {
                           <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-text-secondary">{deployment.assessment.summary}</p>
                         )}
                       </div>
-                      <Link
-                        href={`/deployments/${deployment.id}`}
-                        className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1 rounded-lg border border-surface-border px-3 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-subtle hover:text-signal"
-                      >
-                        Inspect <ArrowUpRight className="h-3.5 w-3.5" />
-                      </Link>
+                      {deployment.url ? (
+                        <a
+                          href={deployment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1 rounded-lg border border-surface-border px-3 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-subtle hover:text-signal"
+                        >
+                          Open deployment <ArrowUpRight className="h-3.5 w-3.5" />
+                        </a>
+                      ) : (
+                        <span className="text-[10px] font-mono uppercase text-text-muted">No deployment URL</span>
+                      )}
                     </div>
                   ))}
                 </div>
