@@ -21,6 +21,12 @@ jobs:
       contents: read
       pull-requests: read
 
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy' }}
+      DIRECT_URL: ${{ secrets.DIRECT_URL || 'postgresql://dummy:dummy@localhost:5432/dummy' }}
+      HINDSIGHT_BASE_URL: "https://api.hindsight.vectorize.io"
+      HINDSIGHT_USE_MOCK: "true"
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -47,8 +53,6 @@ jobs:
 
       - name: Production Build Check
         run: npm run build
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy' }}
 
       - name: Collect & Dispatch Signed Deployment Event
         if: always()
