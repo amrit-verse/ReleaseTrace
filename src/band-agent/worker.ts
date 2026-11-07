@@ -126,8 +126,14 @@ export async function runWorker(env = process.env): Promise<void> {
   process.on("SIGTERM", () => shutdown("SIGTERM"));
 
   try {
-    // Run persistent loop using official SDK agent.run()
-    await instance.agent.run({ signals: false });
+    // Connect and start the agent runtime
+    await instance.agent.start();
+    console.log(`[ReleaseTrace AI] Successfully connected to Band WebSocket runtime!`);
+    console.log(`[ReleaseTrace AI] Agent status: ${instance.agent.state.status}`);
+    console.log(`[ReleaseTrace AI] Listening for mentions in assigned Band rooms...\n`);
+
+    // Keep running persistently
+    await (instance.agent as any).platformRuntime.runForever();
   } catch (err: unknown) {
     console.error("\n❌ Band runtime encountered a fatal error:", err);
     process.exit(1);
