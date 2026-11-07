@@ -17,6 +17,7 @@ import {
 import { mockIntegrations } from "@/data/mockData";
 import { IntegrationConfig } from "@/types";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
 import { useToast } from "@/components/ui/ToastProvider";
 import {
   fadeInVariants,
@@ -183,6 +184,14 @@ export default function IntegrationsPage() {
             <span>Probe All Heartbeats</span>
           </motion.button>
         }
+      />
+
+      <PlainEnglishCallout
+        title="Understanding Your Production Infrastructure Mesh"
+        analogy="Think of ReleaseTrace like an air traffic control radar. It doesn't fly the airplanes; it monitors the radar feed from the airline (GitHub), the runway tarmac (Neon Postgres), the control tower (Vercel), and flight logs (Hindsight Memory) to ensure no collisions occur."
+        explanation="Each tile below represents an actual cloud integration. When you commit code, GitHub Actions sends a signed webhook, Vercel initiates a preview deployment, Neon provides live database connection state, and Vectorize Hindsight recalls past post-mortems. Live heartbeats verify credentials and network latency in real time."
+        whyItMatters="Modern apps don't fail in isolation; they fail at the seams between services (e.g. database pool starvation during a Vercel serverless traffic burst). Continuous integration health ensures your release safety mesh is always online."
+        keyTerms={["Cryptographic Webhook Signature", "PgBouncer Connection Pool", "Vectorize Hindsight Cloud", "Inngest Durable Execution"]}
       />
 
       {/* Integrations Grid */}
