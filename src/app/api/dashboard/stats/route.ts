@@ -6,8 +6,7 @@ import { RISK_RULE_REGISTRY } from "@/intelligence/rules/risk-rules";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
+export async function GET() {
   const canonicalProjectId = process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
   const projectId = canonicalProjectId;
 
@@ -57,7 +56,7 @@ export async function GET(request: Request) {
       console.error("[dashboard/stats] Hindsight query failed:", error);
     }
   } else {
-    verifiedPrecedentsCount = adapter.getBankMemoriesCount(bankId);
+    memoryDocumentCount = adapter.getBankMemoriesCount(bankId);
   }
 
   return NextResponse.json({
