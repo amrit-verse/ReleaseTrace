@@ -10,97 +10,110 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Stitch Design System Tokens (Modern / Corporate — light, calm slate-teal)
-        // Source: DESIGN.md from the Stitch redesign export.
-        canvas: {
-          DEFAULT: "#faf9f9", // Stitch surface / background
-          dark: "#dadada", // surface-dim
-        },
-        surface: {
-          DEFAULT: "#ffffff", // surface-container-lowest — cards
-          subtle: "#f4f3f3", // surface-container-low
-          elevated: "#f4f3f3", // inset / chip background
-          overlay: "#eeeeed", // surface-container
-          muted: "#f4f3f3",
-          border: "#e3e2e2", // surface-container-highest
-          "border-subtle": "rgba(65, 72, 73, 0.12)",
-        },
-        // Stitch primary — deep slate-teal
-        signal: {
-          DEFAULT: "#426164",
-          hover: "#5a7a7d", // primary-container
-          subtle: "rgba(66, 97, 100, 0.10)",
-        },
+        // Modern Design System Tokens from DESIGN.md
         primary: {
           DEFAULT: "#426164",
           container: "#5a7a7d",
+          fixed: "#c7e9ec",
+          "fixed-dim": "#abcdd0",
         },
-        // Verified / healthy — deepened sage so text stays readable on light tints
+        "on-primary": "#ffffff",
+        "on-primary-container": "#f5feff",
+        secondary: {
+          DEFAULT: "#556062",
+          container: "#d8e5e7",
+          fixed: "#d8e5e7",
+          "fixed-dim": "#bcc9cb",
+        },
+        "on-secondary": "#ffffff",
+        "on-secondary-container": "#5b6668",
+        tertiary: {
+          DEFAULT: "#775442",
+          container: "#926c59",
+        },
+        surface: {
+          DEFAULT: "#faf9f9",
+          dim: "#dadada",
+          bright: "#faf9f9",
+          variant: "#e3e2e2",
+          subtle: "#f4f3f3",
+          elevated: "#ffffff",
+          overlay: "#ffffff",
+          muted: "#eeeeed",
+          border: "#e2e8f0",
+          "border-subtle": "rgba(113, 120, 121, 0.15)",
+          "container-lowest": "#ffffff",
+          "container-low": "#f4f3f3",
+          container: "#eeeeed",
+          "container-high": "#e8e8e8",
+          "container-highest": "#e3e2e2",
+        },
+        "on-surface": "#1a1c1c",
+        "on-surface-variant": "#414849",
+        outline: {
+          DEFAULT: "#717879",
+          variant: "#c1c8c8",
+        },
+        brand: {
+          DEFAULT: "#426164",
+          subtle: "#f0f5f6",
+          accent: "#2f4f52",
+          hindsight: "#426164",
+          "hindsight-dark": "#2f4f52",
+          cyan: "#0284c7",
+          emerald: "#059669",
+          amber: "#d97706",
+          rose: "#e11d48",
+        },
+        // Backward-compatible tokens mapped cleanly to new palette
+        canvas: {
+          DEFAULT: "#faf9f9",
+          dark: "#f4f3f3",
+        },
+        signal: {
+          DEFAULT: "#426164",
+          hover: "#2f4f52",
+          subtle: "rgba(66, 97, 100, 0.12)",
+        },
         sage: {
-          DEFAULT: "#3e7c59",
-          subtle: "rgba(62, 124, 89, 0.12)",
+          DEFAULT: "#059669",
+          subtle: "rgba(5, 150, 105, 0.12)",
         },
         text: {
-          primary: "#1a1c1c", // on-surface
-          secondary: "#414849", // on-surface-variant
-          muted: "#717879", // outline
+          primary: "#1a1c1c",
+          secondary: "#414849",
+          muted: "#717879",
         },
         risk: {
-          critical: "#ba1a1a", // Stitch error
-          high: "#b45309",
-          elevated: "#b45309",
-          nominal: "#3e7c59",
+          critical: "#dc2626",
+          high: "#d97706",
+          elevated: "#d97706",
+          nominal: "#059669",
           verified: "#426164",
           insufficient: "#717879",
         },
-        // Backward-compatible tokens
         background: "#faf9f9",
         foreground: "#1a1c1c",
-        brand: {
-          hindsight: "#426164",
-          "hindsight-dark": "#2c4c4f",
-          cyan: "#426164",
-          emerald: "#3e7c59",
-          amber: "#b45309",
-          rose: "#ba1a1a",
-          subtle: "#f0f5f6", // brand-subtle from the Stitch mock
-          accent: "#2f4f52",
-        },
-      },
-      fontFamily: {
-        mono: [
-          "var(--font-mono)",
-          "ui-monospace",
-          "SFMono-Regular",
-          "Menlo",
-          "Monaco",
-          "Consolas",
-          "monospace",
-        ],
-        sans: [
-          "var(--font-sans)",
-          "Inter",
-          "system-ui",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "sans-serif",
-        ],
-      },
-      boxShadow: {
-        // Stitch elevation: tonal layering + subtle, diffused shadows
-        "panel-subtle": "0 1px 3px 0 rgba(26, 28, 28, 0.06)",
-        panel: "0 1px 3px 0 rgba(26, 28, 28, 0.06)",
-        "panel-elevated": "0 8px 24px -8px rgba(26, 28, 28, 0.14)",
-        "border-inset": "inset 0 1px 0 0 rgba(255, 255, 255, 0.6)",
       },
       borderRadius: {
-        // Stitch rounded scale (roundedness 2)
-        sm: "0.375rem",
+        sm: "0.25rem",
         DEFAULT: "0.5rem",
-        md: "0.75rem",
-        lg: "1rem",
-        xl: "1.5rem",
+        md: "0.5rem",
+        lg: "0.5rem",
+        xl: "0.75rem",
+        "2xl": "1rem",
+        full: "9999px",
+      },
+      boxShadow: {
+        sm: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+        panel: "0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06)",
+        "panel-subtle": "0 1px 3px 0 rgba(0, 0, 0, 0.06)",
+        "panel-elevated": "0 4px 12px -2px rgba(0, 0, 0, 0.08)",
+        "border-inset": "inset 0 1px 0 0 rgba(255, 255, 255, 0.6)",
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "Inter", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
     },
   },

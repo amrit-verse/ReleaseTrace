@@ -24,6 +24,7 @@
     "@neondatabase/serverless": "^1.2.0",
     "@prisma/adapter-neon": "^6.4.1",
     "@prisma/client": "^6.4.1",
+    "@shayxo.dev/liquidglass": "^1.0.0",
     "@vectorize-io/hindsight-client": "^1.2.0",
     "clsx": "^2.1.1",
     "dotenv": "^16.4.7",

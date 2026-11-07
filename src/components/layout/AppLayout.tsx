@@ -23,6 +23,8 @@ import {
   BookOpen,
 } from "lucide-react";
 import { ToastProvider } from "@/components/ui/ToastProvider";
+import { ThemeProvider } from "@/components/ui/ThemeProvider";
+import { ThemeSelector } from "@/components/ui/ThemeSelector";
 import {
   DevOpsGuideProvider,
   useDevOpsGuide,
@@ -83,8 +85,8 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
   }, [setIsGlossaryModalOpen]);
 
   return (
-    <div className="min-h-screen bg-canvas text-text-primary flex flex-col font-sans selection:bg-signal/20">
-      <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-surface-border/60 bg-surface/95 px-3 lg:px-6 shadow-[0_1px_4px_rgba(0,0,0,0.03)] backdrop-blur-md">
+    <div className="liquid-glass-stage min-h-screen bg-canvas text-text-primary flex flex-col font-sans selection:bg-signal/20">
+      <header className="liquid-glass-header sticky top-0 z-40 flex h-16 items-center justify-between border-b border-surface-border/60 bg-surface/95 px-3 lg:px-6 shadow-[0_1px_4px_rgba(0,0,0,0.03)] backdrop-blur-md">
         <div className="flex min-w-0 items-center gap-3">
           <button
             type="button"
@@ -171,11 +173,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             <Activity className="h-3.5 w-3.5 text-signal" />
             <span>Health</span>
           </Link>
+          <ThemeSelector />
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
-        <aside className="hidden w-60 shrink-0 flex-col justify-between border-r border-surface-border bg-surface px-3 py-4 lg:flex">
+        <aside className="liquid-glass-sidebar hidden w-60 shrink-0 flex-col justify-between border-r border-surface-border bg-surface px-3 py-4 lg:flex">
           <div className="space-y-6">
             <div>
               <p className="mb-2 px-3 font-mono text-[10px] uppercase tracking-wider text-text-muted">
@@ -385,7 +388,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
       <nav
         aria-label="Primary mobile navigation"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-surface-border bg-surface/95 shadow-[0_-1px_4px_rgba(0,0,0,0.04)] backdrop-blur-md lg:hidden"
+        className="liquid-glass-navbar fixed inset-x-0 bottom-0 z-40 border-t border-surface-border bg-surface/95 shadow-[0_-1px_4px_rgba(0,0,0,0.04)] backdrop-blur-md lg:hidden"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="grid grid-cols-4">
@@ -416,10 +419,12 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
 export function AppLayout({ children }: AppLayoutProps) {
   return (
-    <ToastProvider>
-      <DevOpsGuideProvider>
-        <AppLayoutContent>{children}</AppLayoutContent>
-      </DevOpsGuideProvider>
-    </ToastProvider>
+    <ThemeProvider>
+      <ToastProvider>
+        <DevOpsGuideProvider>
+          <AppLayoutContent>{children}</AppLayoutContent>
+        </DevOpsGuideProvider>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }

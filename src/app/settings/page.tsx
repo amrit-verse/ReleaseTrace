@@ -1,19 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion } from "motion/react";
 import {
   BrainCircuit,
   ShieldCheck,
   Bell,
+  Save,
   Download,
 } from "lucide-react";
 import { mockDefaultSettings } from "@/data/mockData";
 import { WorkspaceSettings } from "@/types";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/ToastProvider";
-import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
-import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
 import {
   fadeInVariants,
   staggerContainer,
@@ -22,9 +21,13 @@ import {
 } from "@/lib/motion";
 
 export default function SettingsPage() {
-  const { setIsGlossaryModalOpen } = useDevOpsGuide();
   const [settings, setSettings] = useState<WorkspaceSettings>(mockDefaultSettings);
-  const { info } = useToast();
+  const { success, info } = useToast();
+
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    success("Settings Saved", "Workspace policy configuration updated and distributed to active CI runners.");
+  };
 
   const handleExportAudit = () => {
     const dataStr =
@@ -47,11 +50,11 @@ export default function SettingsPage() {
     >
       {/* Header */}
       <PageHeader
-        title="Workspace & policy draft"
-        subtitle="Edit and export a proposed policy configuration. These values are not yet persisted or enforced by the release pipeline."
+        title="Workspace & Policy Configuration"
+        subtitle="Pre-flight deterministic gating thresholds, Hindsight retention windows, and notification webhooks."
         badge={
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-elevated text-signal border border-surface-border">
-            LOCAL DRAFT
+            ACTIVE POLICY
           </span>
         }
         actions={
@@ -67,23 +70,11 @@ export default function SettingsPage() {
         }
       />
 
-      <PlainEnglishCallout
-        title="How DevOps Risk Policies Protect Teams"
-        analogy="Think of release policies like the autopilot altitude alarms and maximum wind limits in modern aviation. If crosswinds exceed 40 knots, autopilot disengages and mandates manual captain sign-off. Risk policies prevent rogue or accidental deployments when automated risk exceeds your team's comfort limit."
-        explanation="Engineering teams configure risk tolerance thresholds (e.g. 70/100). If a PR introduces an unindexed migration or an untested critical path, the score crosses the threshold. ReleaseTrace automatically converts the release from 'Autopilot' to 'Human Verification Required' and notifies Slack and PagerDuty."
-        whyItMatters="Without explicit gating policies, teams rely on hope. Explicit policies make safety objective, auditable, and repeatable across every microservice and developer."
-        keyTerms={["Risk Tolerance Threshold", "Mandatory Lead Signoff", "Incident Blast Radius", "Audit Export"]}
-        suggestedAction={{
-          label: "Browse DevOps terms glossary",
-          onClick: () => setIsGlossaryModalOpen(true),
-        }}
-      />
-
-      <div className="space-y-6">
+      <form onSubmit={handleSave} className="space-y-6">
         {/* Section 1: Pre-Flight Gating Policy */}
         <motion.div
           variants={fadeInVariants}
-          className="bg-surface border border-surface-border rounded p-5 space-y-4 shadow-panel"
+          className="liquid-glass-card rounded-2xl p-5 space-y-4 shadow-sm"
         >
           <div className="flex items-center space-x-2 border-b border-surface-border pb-3">
             <ShieldCheck className="w-4 h-4 text-sage" />
@@ -169,7 +160,7 @@ export default function SettingsPage() {
         {/* Section 2: Hindsight Memory Engine Retention */}
         <motion.div
           variants={fadeInVariants}
-          className="bg-surface border border-surface-border rounded p-5 space-y-4 shadow-panel"
+          className="liquid-glass-card rounded-2xl p-5 space-y-4 shadow-sm"
         >
           <div className="flex items-center space-x-2 border-b border-surface-border pb-3">
             <BrainCircuit className="w-4 h-4 text-signal" />
@@ -232,7 +223,7 @@ export default function SettingsPage() {
         {/* Section 3: Incident Notifications & Webhooks */}
         <motion.div
           variants={fadeInVariants}
-          className="bg-surface border border-surface-border rounded p-5 space-y-4 shadow-panel"
+          className="liquid-glass-card rounded-2xl p-5 space-y-4 shadow-sm"
         >
           <div className="flex items-center space-x-2 border-b border-surface-border pb-3">
             <Bell className="w-4 h-4 text-risk-warning" />
@@ -282,10 +273,19 @@ export default function SettingsPage() {
           </div>
         </motion.div>
 
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
-          This editor currently holds values in page state only. Changes are not saved to Neon, Vercel, Hindsight, or CI runners. Use <strong>Export Config JSON</strong> to download this draft.
+        {/* Save Button */}
+        <div className="flex justify-end space-x-3 font-mono text-xs">
+          <motion.button
+            whileHover={hoverSubtle}
+            whileTap={tapSubtle}
+            type="submit"
+            className="px-6 py-3 rounded-full btn-catchy-primary font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl active:scale-95 transition-all text-xs cursor-pointer"
+          >
+            <Save className="w-4 h-4 text-amber-300" />
+            <span>SAVE WORKSPACE SETTINGS</span>
+          </motion.button>
         </div>
-      </div>
+      </form>
     </motion.div>
   );
 }

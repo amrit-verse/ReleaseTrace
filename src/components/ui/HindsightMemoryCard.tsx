@@ -21,7 +21,7 @@ export function HindsightMemoryCard({ memory, compact = false }: HindsightMemory
   const isSev1 = memory.severity === "SEV-1";
 
   return (
-    <div className="bg-surface border border-surface-border rounded overflow-hidden font-sans hover:border-signal/40 transition-colors shadow-panel">
+    <div className="liquid-glass-card rounded-2xl overflow-hidden font-sans hover:border-slate-300 transition-all shadow-sm hover:shadow-md">
       {/* Top Banner */}
       <div className="p-4 bg-surface-elevated/60 border-b border-surface-border flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center space-x-2.5">

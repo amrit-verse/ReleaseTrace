@@ -23,8 +23,6 @@ import { RiskBadge } from "@/components/ui/StatusBadge";
 import { HindsightMemoryCard } from "@/components/ui/HindsightMemoryCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/ToastProvider";
-import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
-import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
 import {
   fadeInVariants,
   staggerContainer,
@@ -36,7 +34,6 @@ export default function LearningLabPage() {
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>("scenario-postgres-lock");
   const [engineMode, setEngineMode] = useState<"LIVE_MEMORY_ENGINE" | "FIXTURE">("LIVE_MEMORY_ENGINE");
   const { success, warning, info } = useToast();
-  const { setIsSimulatorModalOpen } = useDevOpsGuide();
 
   // Step state: 1: Cold, 2: Retention, 3: Warm
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -560,18 +557,6 @@ export default function LearningLabPage() {
         }
       />
 
-      <PlainEnglishCallout
-        title="Understanding the 3-Step Cold vs Warm Memory Experiment"
-        analogy="Imagine an experienced senior surgeon vs a novice medical student. The novice looks at standard test results and says 'everything looks normal' (Cold Run). But the senior surgeon remembers a rare patient last year who crashed under this exact dosage and stops the operation (Warm Run with Memory). ReleaseTrace brings this exact organizational memory to CI pipelines."
-        explanation="Standard CI checkers only verify syntax, static unit tests, and types. In Step 1 (Cold Run), the engine lacks memory of past outages, so subtle high-risk changes pass. In Step 2 (Retention), an engineer's verified post-mortem is retained into Hindsight vector memory. In Step 3 (Warm Run), the exact same release is re-evaluated, and Hindsight proactively intercepts the failure before it can take down production."
-        whyItMatters="Organizations repeat the same catastrophic infrastructure failures every 6-18 months because junior engineers don't know what happened before they joined. ReleaseTrace makes engineering incident memory persistent and proactive."
-        keyTerms={["Cold CI Run (Naive)", "Post-Mortem Retention", "Warm CI Run (Memory-Augmented)", "Catastrophic Prevention"]}
-        suggestedAction={{
-          label: "Open release simulator sandbox",
-          onClick: () => setIsSimulatorModalOpen(true),
-        }}
-      />
-
       {/* Scenario Selector */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono text-xs">
         {mockLearningLabScenarios.map((scen) => {
@@ -582,19 +567,19 @@ export default function LearningLabPage() {
               whileHover={hoverSubtle}
               whileTap={tapSubtle}
               onClick={() => handleScenarioChange(scen.id)}
-              className={`p-3 rounded border text-left transition-all ${
+              className={`p-4 rounded-2xl text-left transition-all ${
                 isSelected
-                  ? "bg-surface-elevated border-signal shadow-panel text-text-primary"
-                  : "bg-surface border-surface-border text-text-muted hover:border-surface-border/80 hover:text-text-secondary"
+                  ? "liquid-glass-card border-slate-900 shadow-md text-slate-900 ring-2 ring-slate-900/10"
+                  : "liquid-glass-card text-slate-600 hover:text-slate-900 shadow-sm hover:shadow-md"
               }`}
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-xs text-text-primary">{scen.service}</span>
-                <span className="text-[10px] text-signal/80 font-mono">
+                <span className="font-semibold text-xs text-slate-900">{scen.service}</span>
+                <span className="text-[10px] text-slate-500 font-mono">
                   {scen.commitHash.substring(0, 8)}
                 </span>
               </div>
-              <p className="text-[11px] text-text-secondary font-sans line-clamp-2">
+              <p className="text-[11px] text-slate-600 font-sans line-clamp-2">
                 {scen.title}
               </p>
             </motion.button>
@@ -603,7 +588,7 @@ export default function LearningLabPage() {
       </div>
 
       {/* Interactive 3-Step Progression Bar */}
-      <div className="bg-surface border border-surface-border rounded p-3 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono shadow-panel">
+      <div className="liquid-glass-card rounded-2xl p-4 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono shadow-sm">
         {/* Step 1 */}
         <div
           className={`p-3 rounded border flex items-center space-x-3 ${
@@ -742,7 +727,7 @@ export default function LearningLabPage() {
               whileTap={tapSubtle}
               onClick={runColdAssessment}
               disabled={isEvaluating}
-              className="px-4 py-2 rounded bg-signal text-canvas font-mono text-xs font-semibold shrink-0 transition-colors shadow-panel"
+              className="px-5 py-2.5 rounded-full btn-catchy-primary font-mono text-xs font-semibold shrink-0 transition-all shadow-md hover:shadow-lg active:scale-95 cursor-pointer"
             >
               {isEvaluating ? "Evaluating..." : "Run Cold Assessment"}
             </motion.button>
@@ -827,9 +812,9 @@ export default function LearningLabPage() {
                     whileTap={tapSubtle}
                     onClick={retainIncident}
                     disabled={isEvaluating}
-                    className="px-4 py-2 rounded bg-signal text-canvas font-mono text-xs font-semibold flex items-center space-x-1.5 shadow-panel transition-colors"
+                    className="px-5 py-2.5 rounded-full btn-catchy-primary font-mono text-xs font-semibold flex items-center space-x-2 shadow-md hover:shadow-lg active:scale-95 transition-all cursor-pointer"
                   >
-                    <Sparkles className="w-4 h-4" />
+                    <Sparkles className="w-4 h-4 text-amber-300" />
                     <span>{isEvaluating ? "Retaining into Hindsight..." : "Retain Incident Memory to Hindsight"}</span>
                   </motion.button>
                 </div>
@@ -841,23 +826,23 @@ export default function LearningLabPage() {
         {/* Step 3: Warm Run (After Retention) */}
         {hasRetained && (
           <div className="space-y-4 pt-2">
-            <div className="p-3 bg-sage/15 border border-sage/40 rounded flex items-center justify-between text-xs font-mono text-sage">
+            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between text-xs font-mono text-emerald-800 shadow-xs">
               <span className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-sage" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 <span>Memory Verified: Successfully Indexed in Hindsight Cluster</span>
               </span>
-              <span className="text-text-muted">Memory ID: {retainedMemoryResult?.id}</span>
+              <span className="text-slate-500">Memory ID: {retainedMemoryResult?.id}</span>
             </div>
 
             {!warmResult && (
               <motion.div
                 variants={fadeInVariants}
-                className="p-4 rounded bg-surface-elevated border border-surface-border flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                className="p-4 rounded-2xl liquid-glass-card flex flex-col sm:flex-row sm:items-center justify-between gap-4"
               >
                 <div className="space-y-1">
                   <h3 className="text-sm font-semibold text-text-primary flex items-center gap-2">
                     <span>Phase 3: Run Similar Release Pre-Flight (Warm State)</span>
-                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-signal/20 text-signal border border-signal/40">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
                       HINDSIGHT ACTIVE
                     </span>
                   </h3>
@@ -871,7 +856,7 @@ export default function LearningLabPage() {
                   whileTap={tapSubtle}
                   onClick={runWarmAssessment}
                   disabled={isEvaluating}
-                  className="px-4 py-2 rounded bg-signal text-canvas font-mono text-xs font-semibold shrink-0 transition-colors shadow-panel"
+                  className="px-5 py-2.5 rounded-full btn-catchy-gradient font-mono text-xs font-semibold shrink-0 transition-all shadow-md hover:shadow-lg active:scale-95 cursor-pointer"
                 >
                   {isEvaluating ? "Evaluating with Hindsight..." : "Run Warm Assessment"}
                 </motion.button>
