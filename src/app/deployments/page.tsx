@@ -97,7 +97,7 @@ export default function DeploymentsHistoryPage() {
             whileHover={hoverSubtle}
             whileTap={tapSubtle}
             onClick={resetFilters}
-            className="px-3 py-1.5 rounded bg-surface-elevated hover:bg-surface-elevated/80 text-text-secondary hover:text-text-primary border border-surface-border text-xs font-mono flex items-center gap-1.5 transition-colors"
+            className="px-3.5 py-1.5 rounded-full liquid-glass-pill text-text-secondary hover:text-text-primary text-xs font-mono flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Reset Filters</span>
@@ -106,7 +106,7 @@ export default function DeploymentsHistoryPage() {
       />
 
       {/* Filter and Search Bar */}
-      <div className="bg-surface border border-surface-border rounded p-3.5 grid grid-cols-1 md:grid-cols-4 gap-3 font-mono text-xs shadow-panel">
+      <div className="liquid-glass-card rounded-2xl p-4 grid grid-cols-1 md:grid-cols-4 gap-3 font-mono text-xs shadow-sm">
         {/* Search */}
         <div className="md:col-span-2 relative">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
@@ -149,7 +149,7 @@ export default function DeploymentsHistoryPage() {
       </div>
 
       {/* Deployments Table / List */}
-      <div className="bg-surface border border-surface-border rounded overflow-hidden font-sans shadow-panel">
+      <div className="liquid-glass-card rounded-2xl overflow-hidden font-sans shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead className="bg-surface-elevated/80 border-b border-surface-border font-mono text-[10px] text-text-muted uppercase tracking-wider">
@@ -305,7 +305,7 @@ export default function DeploymentsHistoryPage() {
                           <motion.div
                             whileHover={hoverSubtle}
                             whileTap={tapSubtle}
-                            className="px-2.5 py-1 rounded bg-surface-elevated hover:bg-surface-elevated/80 text-text-secondary hover:text-text-primary text-xs font-mono border border-surface-border inline-flex items-center space-x-1 transition-colors"
+                            className="px-3 py-1 rounded-full liquid-glass-pill text-text-secondary hover:text-text-primary text-xs font-mono inline-flex items-center space-x-1 transition-all shadow-xs active:scale-95"
                           >
                             <span>Inspect</span>
                             <ChevronRight className="w-3.5 h-3.5 text-text-muted" />

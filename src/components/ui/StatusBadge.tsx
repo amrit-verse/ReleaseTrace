@@ -23,37 +23,37 @@ export function RiskBadge({ classification, showIcon = true, size = "md" }: Risk
   > = {
     CRITICAL: {
       label: "CRITICAL",
-      bg: "bg-red-50",
+      bg: "bg-red-50/80",
       text: "text-red-700",
-      border: "border-red-200",
+      border: "border-red-300",
       icon: ShieldAlert,
     },
     HIGH_RISK: {
       label: "HIGH RISK",
-      bg: "bg-amber-50",
+      bg: "bg-amber-50/80",
       text: "text-amber-800",
-      border: "border-amber-200",
+      border: "border-amber-300",
       icon: AlertTriangle,
     },
     ELEVATED: {
       label: "ELEVATED",
-      bg: "bg-amber-50/80",
+      bg: "bg-amber-50/70",
       text: "text-amber-800",
-      border: "border-amber-200",
+      border: "border-amber-300",
       icon: AlertTriangle,
     },
     NOMINAL: {
       label: "NOMINAL",
-      bg: "bg-emerald-50",
+      bg: "bg-emerald-50/80",
       text: "text-emerald-700",
-      border: "border-emerald-200",
+      border: "border-emerald-300",
       icon: CheckCircle,
     },
     VERIFIED: {
       label: "VERIFIED SAFE",
-      bg: "bg-primary/10",
+      bg: "bg-primary/15",
       text: "text-primary",
-      border: "border-primary/20",
+      border: "border-primary/30",
       icon: Sparkles,
     },
   };
@@ -62,14 +62,14 @@ export function RiskBadge({ classification, showIcon = true, size = "md" }: Risk
   const Icon = config.icon;
 
   const sizeClasses = {
-    sm: "px-1.5 py-0.5 text-[10px] gap-1",
-    md: "px-2 py-0.5 text-[11px] gap-1.5",
-    lg: "px-3 py-1 text-xs gap-2 font-semibold",
+    sm: "px-2 py-0.5 text-[10px] gap-1",
+    md: "px-2.5 py-0.5 text-[11px] gap-1.5",
+    lg: "px-3.5 py-1 text-xs gap-2 font-bold",
   };
 
   return (
     <span
-      className={`inline-flex items-center font-mono font-medium rounded-md border ${config.bg} ${config.text} ${config.border} ${sizeClasses[size]}`}
+      className={`inline-flex items-center font-mono font-bold rounded-full border liquid-glass-pill shadow-xs ${config.bg} ${config.text} ${config.border} ${sizeClasses[size]}`}
     >
       {showIcon && <Icon className={size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"} />}
       <span>{config.label}</span>
@@ -89,30 +89,30 @@ export function StatusBadge({ status, showIcon = true }: StatusBadgeProps) {
   > = {
     passed: {
       label: "PASSED",
-      bg: "bg-emerald-50",
+      bg: "bg-emerald-50/80",
       text: "text-emerald-700",
-      border: "border-emerald-200",
+      border: "border-emerald-300",
       icon: CheckCircle,
     },
     at_risk: {
       label: "AT RISK",
-      bg: "bg-amber-50",
+      bg: "bg-amber-50/80",
       text: "text-amber-800",
-      border: "border-amber-200",
+      border: "border-amber-300",
       icon: AlertTriangle,
     },
     blocked: {
       label: "BLOCKED",
-      bg: "bg-red-50",
+      bg: "bg-red-50/80",
       text: "text-red-700",
-      border: "border-red-200",
+      border: "border-red-300",
       icon: XCircle,
     },
     rolled_back: {
       label: "ROLLED BACK",
-      bg: "bg-rose-50",
+      bg: "bg-rose-50/80",
       text: "text-rose-700",
-      border: "border-rose-200",
+      border: "border-rose-300",
       icon: RotateCcw,
     },
     in_progress: {
@@ -136,7 +136,7 @@ export function StatusBadge({ status, showIcon = true }: StatusBadgeProps) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2 py-0.5 rounded-md border uppercase ${config.bg} ${config.text} ${config.border}`}
+      className={`inline-flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase liquid-glass-pill shadow-xs ${config.bg} ${config.text} ${config.border}`}
     >
       {showIcon && <Icon className="w-3 h-3" />}
       <span>{config.label}</span>
@@ -152,27 +152,27 @@ export function EvidenceSeverityBadge({ severity }: EvidenceSeverityBadgeProps) 
   const configs: Record<EvidenceSeverity, { label: string; bg: string; text: string; border: string }> = {
     CRITICAL: {
       label: "CRITICAL",
-      bg: "bg-red-50",
+      bg: "bg-red-50/80",
       text: "text-red-700",
-      border: "border-red-200",
+      border: "border-red-300",
     },
     HIGH: {
       label: "HIGH",
-      bg: "bg-amber-50",
+      bg: "bg-amber-50/80",
       text: "text-amber-800",
-      border: "border-amber-200",
+      border: "border-amber-300",
     },
     MEDIUM: {
       label: "MEDIUM",
       bg: "bg-amber-50/70",
       text: "text-amber-800",
-      border: "border-amber-200/80",
+      border: "border-amber-200",
     },
     LOW: {
       label: "LOW",
-      bg: "bg-slate-100",
+      bg: "bg-slate-100/80",
       text: "text-slate-600",
-      border: "border-slate-200",
+      border: "border-slate-300",
     },
   };
 
@@ -180,7 +180,7 @@ export function EvidenceSeverityBadge({ severity }: EvidenceSeverityBadgeProps) 
 
   return (
     <span
-      className={`inline-flex items-center font-mono text-[10px] font-bold px-1.5 py-0.2 rounded border uppercase ${config.bg} ${config.text} ${config.border}`}
+      className={`inline-flex items-center font-mono text-[10px] font-bold px-2 py-0.5 rounded-full border uppercase liquid-glass-pill ${config.bg} ${config.text} ${config.border}`}
     >
       {config.label}
     </span>

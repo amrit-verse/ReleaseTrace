@@ -26,9 +26,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("releasetrace-theme");if(t&&["light","dark","warm-brown","cyber-teal","sunset-rose"].indexOf(t)!==-1){document.documentElement.setAttribute("data-theme",t);}else{document.documentElement.setAttribute("data-theme","light");}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-surface text-on-surface min-h-screen selection:bg-primary-container/20 selection:text-primary`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen selection:bg-primary-container/20 selection:text-primary`}
       >
         <AppLayout>{children}</AppLayout>
       </body>

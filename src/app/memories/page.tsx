@@ -152,16 +152,16 @@ export default function MemoryExplorerPage() {
               whileHover={hoverSubtle}
               whileTap={tapSubtle}
               onClick={() => setIsModalOpen(true)}
-              className="px-3 py-1.5 rounded bg-signal text-canvas font-semibold flex items-center space-x-1.5 transition-colors shadow-panel"
+              className="px-4 py-2 rounded-full btn-catchy-primary font-semibold flex items-center space-x-1.5 transition-all shadow-md active:scale-95 text-xs"
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-3.5 h-3.5 text-amber-300" />
               <span>Retain New Incident</span>
             </motion.button>
             <motion.button
               whileHover={hoverSubtle}
               whileTap={tapSubtle}
               onClick={handleReset}
-              className="px-2.5 py-1.5 rounded bg-surface-elevated hover:bg-surface-elevated/80 text-text-secondary hover:text-text-primary border border-surface-border flex items-center space-x-1 transition-colors"
+              className="px-3.5 py-2 rounded-full liquid-glass-pill text-text-secondary hover:text-text-primary flex items-center space-x-1 transition-all shadow-sm active:scale-95 text-xs"
               title="Reset to default fixtures"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -172,7 +172,7 @@ export default function MemoryExplorerPage() {
       />
 
       {/* Filter & Search Bar */}
-      <div className="bg-surface border border-surface-border rounded p-3.5 grid grid-cols-1 md:grid-cols-4 gap-3 font-mono text-xs shadow-panel">
+      <div className="liquid-glass-card rounded-2xl p-4 grid grid-cols-1 md:grid-cols-4 gap-3 font-mono text-xs shadow-sm">
         <div className="md:col-span-2 relative">
           <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
           <input

@@ -31,22 +31,22 @@ export default function DashboardPage() {
       {/* Page Header & Quick Controls */}
       <section className="flex flex-col gap-2 pt-1">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5">
-            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="font-mono text-[10px] uppercase tracking-wider font-semibold text-slate-500">
-              Telemetry Engine
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
+            <span className="font-mono text-[10px] uppercase tracking-wider font-bold text-slate-500">
+              Liquid Telemetry Engine
             </span>
           </div>
-          <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-sm">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full liquid-glass-pill border-emerald-300 text-emerald-800 bg-emerald-50/70 shadow-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-            <span className="font-mono text-[10px] uppercase tracking-wider font-semibold">
+            <span className="font-mono text-[10px] uppercase tracking-wider font-bold">
               Engine Active
             </span>
           </div>
         </div>
 
         <div className="flex flex-col gap-1">
-          <h1 className="text-[24px] lg:text-[26px] font-bold text-slate-900 tracking-tight leading-tight">
+          <h1 className="text-[26px] lg:text-[28px] font-extrabold text-slate-900 tracking-tight leading-tight">
             Release Operations Overview
           </h1>
           <p className="text-[13px] text-slate-600 leading-snug">
@@ -55,38 +55,48 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Action Pill Group */}
-        <div className="flex items-center gap-2 mt-1 overflow-x-auto no-scrollbar pb-0.5">
+        <div className="flex items-center gap-2.5 mt-1 overflow-x-auto no-scrollbar pb-1">
           <Link
             href="/learning-lab"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-lowest border border-slate-200 shadow-sm text-primary hover:bg-slate-50 active:scale-95 transition-all flex-shrink-0"
+            className="flex items-center gap-2 px-4 py-2 rounded-full btn-catchy-primary active:scale-95 transition-all flex-shrink-0"
           >
-            <span className="material-symbols-outlined text-[16px] text-primary">auto_awesome</span>
-            <span className="text-[12px] font-semibold text-slate-900">Interactive Learning Lab</span>
+            <span className="material-symbols-outlined text-[17px] text-amber-300">auto_awesome</span>
+            <span className="text-[12px] font-bold text-white">Interactive Learning Lab</span>
           </Link>
           <Link
             href="/deployments"
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-low border border-slate-200/80 hover:bg-surface-container text-slate-600 hover:text-slate-900 active:scale-95 transition-all flex-shrink-0"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full liquid-glass-pill text-slate-700 hover:text-slate-900 active:scale-95 transition-all flex-shrink-0"
           >
-            <span className="text-[12px] font-medium">Deployment Register</span>
+            <span className="material-symbols-outlined text-[16px] text-slate-600">rocket_launch</span>
+            <span className="text-[12px] font-semibold">Deployment Register</span>
             <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+          </Link>
+          <Link
+            href="/memories"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-full liquid-glass-pill text-slate-700 hover:text-slate-900 active:scale-95 transition-all flex-shrink-0"
+          >
+            <span className="material-symbols-outlined text-[16px] text-primary">psychology</span>
+            <span className="text-[12px] font-semibold">Memory Bank</span>
           </Link>
         </div>
       </section>
 
-      {/* 2x2 Telemetry Stat Cards Grid */}
-      <section aria-label="Core Metrics" className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* 2x2 Telemetry Stat Cards Grid with Liquid Glass Refraction */}
+      <section aria-label="Core Metrics" className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
         {/* Stat 1: Active Runs */}
         <motion.div
           variants={fadeInVariants}
-          className="flex flex-col justify-between p-3.5 rounded-lg bg-surface-container-lowest border border-slate-200/90 shadow-sm"
+          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card shadow-sm"
         >
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-wider">Active Runs</span>
-            <span className="material-symbols-outlined text-[17px] text-primary">hub</span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-wider">Active Runs</span>
+            <div className="w-8 h-8 rounded-xl liquid-glass-pill bg-sky-50/80 border-sky-200 flex items-center justify-center text-sky-600 shadow-sm">
+              <span className="material-symbols-outlined text-[17px]">hub</span>
+            </div>
           </div>
-          <div className="my-1.5 flex items-baseline gap-1.5">
-            <span className="text-[28px] font-bold text-slate-900 tracking-tight">{totalMonitoredDeployments}</span>
-            <span className="font-mono text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+          <div className="my-2 flex items-baseline gap-2">
+            <span className="text-[30px] font-extrabold text-slate-900 tracking-tight">{totalMonitoredDeployments}</span>
+            <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50/90 border border-emerald-300 px-2 py-0.5 rounded-full uppercase shadow-xs">
               live
             </span>
           </div>
@@ -98,15 +108,17 @@ export default function DashboardPage() {
         {/* Stat 2: Interceptions */}
         <motion.div
           variants={fadeInVariants}
-          className="flex flex-col justify-between p-3.5 rounded-lg bg-surface-container-lowest border border-red-200/90 shadow-sm relative overflow-hidden bg-gradient-to-br from-white to-red-50/30"
+          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card border-rose-300/80 bg-rose-50/40 shadow-sm"
         >
           <div className="flex items-center justify-between text-rose-700">
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-wider">Interceptions</span>
-            <span className="material-symbols-outlined text-[17px] text-rose-600">gpp_bad</span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-wider">Interceptions</span>
+            <div className="w-8 h-8 rounded-xl liquid-glass-pill border-rose-200 bg-rose-50 flex items-center justify-center text-rose-600 shadow-sm">
+              <span className="material-symbols-outlined text-[17px]">gpp_bad</span>
+            </div>
           </div>
-          <div className="my-1.5 flex items-baseline gap-1.5">
-            <span className="text-[28px] font-bold text-rose-600 tracking-tight">{criticalBlockedCount}</span>
-            <span className="font-mono text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded uppercase">
+          <div className="my-2 flex items-baseline gap-2">
+            <span className="text-[30px] font-extrabold text-rose-600 tracking-tight">{criticalBlockedCount}</span>
+            <span className="font-mono text-[10px] font-bold text-rose-700 bg-rose-50/90 border border-rose-300 px-2 py-0.5 rounded-full uppercase shadow-xs">
               Gate Block
             </span>
           </div>
@@ -118,15 +130,17 @@ export default function DashboardPage() {
         {/* Stat 3: Retained Memories */}
         <motion.div
           variants={fadeInVariants}
-          className="flex flex-col justify-between p-3.5 rounded-lg bg-surface-container-lowest border border-slate-200/90 shadow-sm"
+          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card shadow-sm"
         >
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-wider">Retained Memories</span>
-            <span className="material-symbols-outlined text-[17px] text-primary">psychology</span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-wider">Retained Memories</span>
+            <div className="w-8 h-8 rounded-xl liquid-glass-pill bg-indigo-50/80 border-indigo-200 flex items-center justify-center text-indigo-600 shadow-sm">
+              <span className="material-symbols-outlined text-[17px]">psychology</span>
+            </div>
           </div>
-          <div className="my-1.5 flex items-baseline gap-1.5">
-            <span className="text-[28px] font-bold text-slate-900 tracking-tight">5</span>
-            <span className="font-mono text-[11px] font-semibold text-primary bg-primary/10 px-1.5 py-0.2 rounded border border-primary/20">
+          <div className="my-2 flex items-baseline gap-2">
+            <span className="text-[30px] font-extrabold text-slate-900 tracking-tight">5</span>
+            <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full shadow-xs">
               100%
             </span>
           </div>
@@ -138,15 +152,17 @@ export default function DashboardPage() {
         {/* Stat 4: Rule Enforcement */}
         <motion.div
           variants={fadeInVariants}
-          className="flex flex-col justify-between p-3.5 rounded-lg bg-surface-container-lowest border border-slate-200/90 shadow-sm"
+          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card shadow-sm"
         >
           <div className="flex items-center justify-between text-slate-500">
-            <span className="font-mono text-[10px] font-semibold uppercase tracking-wider">Rule Enforcement</span>
-            <span className="material-symbols-outlined text-[17px] text-emerald-600">shield</span>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-wider">Rule Enforcement</span>
+            <div className="w-8 h-8 rounded-xl liquid-glass-pill bg-emerald-50/80 border-emerald-200 flex items-center justify-center text-emerald-600 shadow-sm">
+              <span className="material-symbols-outlined text-[17px]">shield</span>
+            </div>
           </div>
-          <div className="my-1.5 flex items-baseline gap-1.5">
-            <span className="text-[28px] font-bold text-slate-900 tracking-tight">8</span>
-            <span className="font-mono text-[10px] font-semibold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded uppercase border border-slate-200">
+          <div className="my-2 flex items-baseline gap-2">
+            <span className="text-[30px] font-extrabold text-slate-900 tracking-tight">8</span>
+            <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50/90 border border-emerald-300 px-2 py-0.5 rounded-full uppercase shadow-xs">
               Rules
             </span>
           </div>
@@ -156,60 +172,60 @@ export default function DashboardPage() {
         </motion.div>
       </section>
 
-      {/* CRITICAL INTERCEPTION CARD HERO CALLOUT */}
+      {/* CRITICAL INTERCEPTION CARD HERO CALLOUT (Liquid Glass) */}
       <motion.section
         variants={fadeInVariants}
-        className="flex flex-col rounded-lg bg-red-50/70 border border-red-200 p-4 shadow-sm relative overflow-hidden"
+        className="flex flex-col rounded-2xl liquid-glass-critical p-5 relative overflow-hidden"
       >
-        <div className="absolute top-0 left-0 right-0 h-1 bg-red-600"></div>
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-rose-500 to-red-600"></div>
         {/* Top banner strip */}
         <div className="flex items-start justify-between gap-2 mb-2 pt-0.5">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="relative flex h-2.5 w-2.5 flex-shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="relative flex h-3 w-3 flex-shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600 shadow-md"></span>
             </span>
             <span className="font-mono text-[11px] font-bold text-red-700 tracking-wider uppercase truncate">
               Critical Pre-flight Interception
             </span>
           </div>
-          <span className="px-2 py-0.5 rounded bg-white/90 border border-red-200 font-mono text-[11px] font-semibold text-slate-700 flex-shrink-0">
+          <span className="px-2.5 py-0.5 rounded-full liquid-glass-pill border-red-300 font-mono text-[11px] font-bold text-slate-800 flex-shrink-0">
             auth-gateway
           </span>
         </div>
 
         {/* Incident Title */}
-        <h2 className="text-[15px] font-semibold text-slate-900 leading-snug tracking-tight mb-3">
+        <h2 className="text-[16px] font-bold text-slate-900 leading-snug tracking-tight mb-3">
           feat(auth): add passkey biometric verification and session metadata table migration
         </h2>
 
-        {/* Score metric + CTA Bar */}
-        <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg bg-white border border-red-200/80 mb-3 shadow-sm">
+        {/* Score metric + CTA Bar (Glass Pill Bar) */}
+        <div className="flex items-center justify-between gap-3 p-3 rounded-xl liquid-glass-subtile mb-3">
           <div className="flex flex-col">
-            <span className="font-mono text-[10px] uppercase font-semibold text-slate-500">Risk Score</span>
+            <span className="font-mono text-[10px] uppercase font-bold text-slate-500">Risk Score</span>
             <div className="flex items-baseline gap-1">
-              <span className="text-[20px] font-bold text-red-600">92</span>
-              <span className="font-mono text-[11px] text-slate-500">/ 100</span>
+              <span className="text-[22px] font-extrabold text-red-600">92</span>
+              <span className="font-mono text-[11px] text-slate-500 font-medium">/ 100</span>
             </div>
           </div>
           <Link
             href="/deployments/dep-prod-9402"
-            className="flex items-center justify-center gap-1.5 px-3.5 h-9 rounded-lg bg-red-600 hover:bg-red-700 active:scale-95 text-white font-medium text-[12px] transition-all shadow-sm"
+            className="flex items-center justify-center gap-1.5 px-5 h-10 rounded-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 active:scale-95 text-white font-bold text-[12px] transition-all shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/35 hover:-translate-y-0.5"
           >
             <span>Inspect Assessment</span>
             <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
           </Link>
         </div>
 
-        {/* Nested Diagnostics Accordion Blocks */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+        {/* Nested Diagnostics Accordion Blocks (Liquid Glass Subtiles) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {/* Evidence 1 */}
-          <div className="p-3 rounded-lg bg-white border border-red-100 flex flex-col gap-1 shadow-sm">
+          <div className="p-3.5 rounded-xl liquid-glass-subtile flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-primary">
-              <span className="material-symbols-outlined text-[15px]">database</span>
-              <span className="font-mono text-[10px] uppercase tracking-wider font-semibold">Detected Evidence</span>
+              <span className="material-symbols-outlined text-[16px]">database</span>
+              <span className="font-mono text-[10px] uppercase tracking-wider font-bold">Detected Evidence</span>
             </div>
-            <p className="text-[13px] font-medium text-slate-800 leading-snug">
+            <p className="text-[13px] font-semibold text-slate-800 leading-snug">
               Table rewrite lock detected on table with 49.8M rows
             </p>
             <p className="text-[11px] text-red-600 font-medium leading-snug mt-auto">
@@ -218,17 +234,17 @@ export default function DashboardPage() {
           </div>
 
           {/* Evidence 2 (Hindsight Incident) */}
-          <div className="p-3 rounded-lg bg-white border border-slate-200/80 flex flex-col gap-1 shadow-sm">
+          <div className="p-3.5 rounded-xl liquid-glass-subtile flex flex-col gap-1.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 text-primary">
-                <span className="material-symbols-outlined text-[15px]">history</span>
-                <span className="font-mono text-[10px] uppercase tracking-wider font-semibold">Recalled Hindsight Incident</span>
+                <span className="material-symbols-outlined text-[16px]">history</span>
+                <span className="font-mono text-[10px] uppercase tracking-wider font-bold">Recalled Incident</span>
               </div>
-              <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono text-[10px] font-bold border border-primary/20">
+              <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-mono text-[10px] font-bold border border-primary/20">
                 94.0% MATCH
               </span>
             </div>
-            <p className="text-[13px] font-medium text-slate-800 leading-snug">
+            <p className="text-[13px] font-semibold text-slate-800 leading-snug">
               Postgres Table Rewrite Outage during User Schema Migration
             </p>
             <span className="font-mono text-[10px] text-slate-500 mt-auto">
@@ -237,164 +253,164 @@ export default function DashboardPage() {
           </div>
 
           {/* Evidence 3 (Verification Gate) */}
-          <div className="p-3 rounded-lg bg-white border border-amber-200 flex flex-col gap-1 shadow-sm">
-            <div className="flex items-center gap-1.5 text-amber-700">
-              <span className="material-symbols-outlined text-[15px]">lock</span>
-              <span className="font-mono text-[10px] uppercase tracking-wider font-semibold">Verification Gate</span>
+          <div className="p-3.5 rounded-xl liquid-glass-subtile border-amber-300/80 flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5 text-amber-800">
+              <span className="material-symbols-outlined text-[16px]">lock</span>
+              <span className="font-mono text-[10px] uppercase tracking-wider font-bold">Verification Gate</span>
             </div>
             <p className="text-[12px] text-slate-700 leading-snug">
               Requires refactoring migration to non-blocking pattern + manual verification sign-off.
             </p>
-            <div className="flex items-center gap-1 font-mono text-[11px] text-red-700 font-semibold mt-auto">
-              <span className="material-symbols-outlined text-[13px]">pause_circle</span>
+            <div className="flex items-center gap-1 font-mono text-[11px] text-red-700 font-bold mt-auto">
+              <span className="material-symbols-outlined text-[14px]">pause_circle</span>
               <span>Deployment paused in CI</span>
             </div>
           </div>
         </div>
       </motion.section>
 
-      {/* Visual Storytelling: Pre-flight Pressure Matrix */}
+      {/* Visual Storytelling: Pre-flight Pressure Matrix (Liquid Glass) */}
       <motion.section
         variants={fadeInVariants}
-        className="flex flex-col p-4 rounded-lg bg-surface-container-lowest border border-slate-200 gap-3 shadow-sm"
+        className="flex flex-col p-5 rounded-2xl liquid-glass-card gap-3.5"
       >
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[18px] text-primary">tune</span>
-            <span className="text-[14px] font-semibold text-slate-900">Pre-flight Pressure Matrix</span>
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[19px] text-primary">tune</span>
+            <span className="text-[15px] font-bold text-slate-900">Pre-flight Pressure Matrix</span>
           </div>
-          <span className="font-mono text-[10px] text-slate-500 uppercase font-medium">
+          <span className="font-mono text-[10px] text-slate-500 uppercase font-bold">
             Correlated Shards
           </span>
         </div>
 
         {/* Sparkline / telemetry visual */}
-        <div className="w-full h-18 relative flex items-end justify-between px-3 pt-3 bg-slate-50 border border-slate-100 rounded-lg overflow-hidden">
-          <svg className="w-full h-14 text-primary" fill="none" preserveAspectRatio="none" viewBox="0 0 100 30">
+        <div className="w-full h-20 relative flex items-end justify-between px-3 pt-3 rounded-xl liquid-glass-subtile overflow-hidden">
+          <svg className="w-full h-16 text-primary" fill="none" preserveAspectRatio="none" viewBox="0 0 100 30">
             <path
               d="M0 24 Q 15 20, 25 22 T 50 14 T 70 26 T 85 4 T 100 28"
               fill="none"
               stroke="currentColor"
               strokeLinecap="round"
-              strokeWidth="2"
+              strokeWidth="2.5"
             />
             <path
               d="M0 24 Q 15 20, 25 22 T 50 14 T 70 26 T 85 4 T 100 28 L 100 30 L 0 30 Z"
-              fill="rgba(66, 97, 100, 0.12)"
+              fill="rgba(245, 158, 11, 0.16)"
             />
           </svg>
-          <div className="absolute top-2 left-3 flex items-center gap-2">
-            <span className="font-mono text-[10px] text-slate-500 font-medium">POOLED SESSIONS</span>
-            <span className="font-mono text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold border border-emerald-200">
+          <div className="absolute top-2.5 left-3 flex items-center gap-2">
+            <span className="font-mono text-[10px] text-slate-500 font-bold">POOLED SESSIONS</span>
+            <span className="font-mono text-[10px] text-emerald-800 bg-emerald-50/90 border border-emerald-300 px-2 py-0.5 rounded-full font-bold">
               49.8M KEYS VERIFIED
             </span>
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-slate-500 font-mono text-[11px]">
+        <div className="flex items-center justify-between text-slate-600 font-mono text-[11px] font-medium">
           <span>Neon Vector Sync: Active</span>
           <span>Prisma Schema Drift: 0.00%</span>
         </div>
       </motion.section>
 
       {/* DEPLOYMENT REGISTER SECTION */}
-      <section className="flex flex-col gap-2 relative z-10" id="deployments">
+      <section className="flex flex-col gap-2.5 relative z-10" id="deployments">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[18px] text-primary">terminal</span>
-              <h2 className="text-[17px] font-bold text-slate-900 tracking-tight">Deployment Register</h2>
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[19px] text-primary">terminal</span>
+              <h2 className="text-[18px] font-bold text-slate-900 tracking-tight">Deployment Register</h2>
             </div>
-            <span className="font-mono text-[11px] text-slate-500 font-medium">
+            <span className="font-mono text-[11px] text-slate-600 font-semibold liquid-glass-pill px-2.5 py-0.5 rounded-full">
               {filteredDeployments.length} Total
             </span>
           </div>
           <p className="text-[12px] text-slate-600">Correlated pipeline runs across environments</p>
         </div>
 
-        {/* Filter Controls Segment */}
+        {/* Filter Controls Segment (Liquid Glass Pills with Tactile Shadows) */}
         <div className="flex items-center justify-between gap-2 mt-1">
-          <div className="flex items-center p-0.5 rounded-lg bg-surface-container-low border border-slate-200">
+          <div className="flex items-center p-1 rounded-full liquid-glass-pill shadow-sm">
             {["ALL", "PRODUCTION", "STAGING"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setFilterEnvironment(tab)}
-                className={`px-3 py-1 rounded-md font-mono text-[10px] uppercase tracking-wider transition-all ${
+                className={`px-3.5 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider transition-all ${
                   filterEnvironment === tab
-                    ? "bg-white text-slate-900 font-semibold shadow-sm"
-                    : "text-slate-600 hover:text-slate-900 font-medium"
+                    ? "nav-item-active"
+                    : "nav-item-inactive"
                 }`}
               >
                 {tab === "ALL" ? "All" : tab.charAt(0) + tab.slice(1).toLowerCase()}
               </button>
             ))}
           </div>
-          <span className="font-mono text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+          <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400 liquid-glass-pill px-3 py-1 rounded-full shadow-xs">
             AUTO-SYNC: ON
           </span>
         </div>
 
         {/* Deployments List Rows */}
-        <div className="flex flex-col gap-2 mt-1">
+        <div className="flex flex-col gap-2.5 mt-1">
           {filteredDeployments.map((dep) => {
             const isCritical = dep.riskClassification === "CRITICAL" || dep.riskScore >= 80;
             const isWarning = dep.riskClassification === "HIGH_RISK" || (dep.riskScore >= 50 && dep.riskScore < 80);
 
             const scoreClass = isCritical
-              ? "bg-red-100/80 text-red-700 border border-red-200"
+              ? "bg-red-100/90 text-red-700 border border-red-300"
               : isWarning
-              ? "bg-amber-50 text-amber-800 border border-amber-200"
-              : "bg-emerald-50 text-emerald-700 border border-emerald-200";
+              ? "bg-amber-100/90 text-amber-800 border border-amber-300"
+              : "bg-emerald-100/90 text-emerald-800 border border-emerald-300";
 
             const statusClass =
               dep.status === "blocked"
-                ? "bg-red-50 border border-red-200 text-red-700"
+                ? "bg-red-50/90 border border-red-300 text-red-700 font-bold"
                 : dep.status === "at_risk"
-                ? "bg-amber-50 text-amber-800"
+                ? "bg-amber-50/90 border border-amber-300 text-amber-800 font-bold"
                 : dep.status === "rolled_back"
-                ? "bg-rose-50 text-rose-700 border border-rose-200"
-                : "bg-emerald-50 text-emerald-700";
+                ? "bg-rose-50/90 border border-rose-300 text-rose-700 font-bold"
+                : "bg-emerald-50/90 border border-emerald-300 text-emerald-700 font-bold";
 
             return (
               <motion.div
                 key={dep.id}
                 variants={fadeInVariants}
-                className={`p-3 rounded-lg bg-surface-container-lowest border ${
-                  isCritical ? "border-red-200 hover:border-red-300" : "border-slate-200 hover:border-slate-300"
-                } transition-all flex flex-col gap-2 shadow-sm`}
+                className={`p-3.5 rounded-2xl liquid-glass-card ${
+                  isCritical ? "border-red-300/80" : ""
+                } flex flex-col gap-2`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex flex-col min-w-0">
-                    <span className="font-semibold text-[13px] text-slate-900 truncate">
+                    <span className="font-bold text-[13px] text-slate-900 truncate">
                       {dep.service}
                     </span>
-                    <span className="font-mono text-[11px] text-slate-500">
+                    <span className="font-mono text-[11px] text-slate-500 font-medium">
                       {dep.version || "v1.0.0"} • {dep.commitHash?.slice(0, 7) || "8a1e94b"}
                     </span>
                   </div>
                   <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                    <span className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold ${scoreClass}`}>
+                    <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold ${scoreClass}`}>
                       {dep.riskClassification} {dep.riskScore}
                     </span>
-                    <span className="font-mono text-[10px] text-slate-400">
+                    <span className="font-mono text-[10px] text-slate-400 font-medium">
                       {new Date(dep.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-1 border-t border-slate-100 text-slate-600">
+                <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-slate-600">
                   <div className="flex items-center gap-1.5">
-                    <span className="px-2 py-0.5 rounded bg-slate-100 font-mono text-[10px] text-slate-700 border border-slate-200">
+                    <span className="px-2.5 py-0.5 rounded-full liquid-glass-pill font-mono text-[10px] text-slate-700 font-semibold">
                       {dep.environment}
                     </span>
-                    <span className={`px-1.5 py-0.5 rounded font-mono text-[10px] font-bold uppercase ${statusClass}`}>
+                    <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] uppercase ${statusClass}`}>
                       {dep.status.replace("_", " ")}
                     </span>
                   </div>
                   <Link
                     href={`/deployments/${dep.id}`}
-                    className={`flex items-center gap-0.5 font-mono text-[11px] font-semibold py-1 ${
-                      isCritical ? "text-red-600 hover:text-red-700" : "text-primary hover:text-slate-900"
+                    className={`flex items-center gap-1 font-mono text-[11px] font-bold px-3 py-1 rounded-full liquid-glass-pill shadow-xs transition-all active:scale-95 ${
+                      isCritical ? "text-red-600 hover:text-red-700 hover:border-red-300" : "text-slate-700 hover:text-slate-900"
                     }`}
                   >
                     <span>Inspect</span>
@@ -407,15 +423,15 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* RECURRING FAILURE CATEGORIES SECTION */}
-      <section className="flex flex-col gap-2 relative z-10">
+      {/* RECURRING FAILURE CATEGORIES SECTION (Liquid Glass) */}
+      <section className="flex flex-col gap-2.5 relative z-10">
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[18px] text-rose-600">warning</span>
-              <h2 className="text-[17px] font-bold text-slate-900 tracking-tight">Recurring Failure Categories</h2>
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-[19px] text-rose-600">warning</span>
+              <h2 className="text-[18px] font-bold text-slate-900 tracking-tight">Recurring Failure Categories</h2>
             </div>
-            <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-mono text-[10px] font-semibold border border-slate-200">
+            <span className="px-2.5 py-0.5 rounded-full liquid-glass-pill text-slate-700 font-mono text-[10px] font-bold">
               Hindsight Index
             </span>
           </div>
@@ -423,31 +439,31 @@ export default function DashboardPage() {
         </div>
 
         {/* Categories Stack */}
-        <div className="flex flex-col gap-2 mt-1">
+        <div className="flex flex-col gap-2.5 mt-1">
           {mockRecurringFailureCategories.map((cat) => (
             <div
               key={cat.id}
-              className="p-3 rounded-lg bg-surface-container-lowest border border-slate-200 flex flex-col gap-1.5 shadow-sm"
+              className="p-4 rounded-2xl liquid-glass-card flex flex-col gap-2"
             >
               <div className="flex items-start justify-between gap-2">
-                <span className="font-semibold text-[13px] text-slate-900">{cat.category}</span>
+                <span className="font-bold text-[13px] text-slate-900">{cat.category}</span>
                 <span
-                  className={`px-2 py-0.5 rounded font-mono text-[10px] font-bold uppercase flex-shrink-0 ${
+                  className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase flex-shrink-0 ${
                     cat.blastRadius === "HIGH"
-                      ? "bg-rose-50 border border-rose-200 text-rose-700"
-                      : "bg-amber-50 border border-amber-200 text-amber-800"
+                      ? "bg-rose-100/90 border border-rose-300 text-rose-700"
+                      : "bg-amber-100/90 border border-amber-300 text-amber-800"
                   }`}
                 >
                   {cat.blastRadius} Impact
                 </span>
               </div>
               <p className="text-[12px] text-slate-600 leading-snug">{cat.description}</p>
-              <div className="flex items-center justify-between pt-1 border-t border-slate-100 font-mono text-[11px] text-slate-500">
+              <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 font-mono text-[11px] text-slate-500">
                 <span>{cat.incidentCount} incidents recorded</span>
                 <span>MTTR: {cat.averageRecoveryMinutes}m</span>
                 <span
-                  className={`flex items-center gap-0.5 font-semibold ${
-                    cat.trend === "DECREASING" ? "text-emerald-700" : "text-slate-500"
+                  className={`flex items-center gap-1 font-bold ${
+                    cat.trend === "DECREASING" ? "text-emerald-700" : "text-slate-600"
                   }`}
                 >
                   <span className="material-symbols-outlined text-[13px]">
@@ -461,14 +477,14 @@ export default function DashboardPage() {
         </div>
       </section>
 
-      {/* HINDSIGHT MEMORY BANK CALLOUT FOOTER CARD */}
-      <section className="p-4 rounded-lg bg-surface-container-lowest border border-slate-200 relative overflow-hidden shadow-sm flex flex-col gap-3 mb-2">
-        <div className="flex items-start gap-3">
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
-            <span className="material-symbols-outlined text-[20px]">psychology</span>
+      {/* HINDSIGHT MEMORY BANK CALLOUT FOOTER CARD (Liquid Glass) */}
+      <section className="p-5 rounded-2xl liquid-glass-card relative overflow-hidden flex flex-col gap-3.5 mb-4">
+        <div className="flex items-start gap-3.5">
+          <div className="w-10 h-10 rounded-xl liquid-glass-pill flex items-center justify-center text-primary flex-shrink-0">
+            <span className="material-symbols-outlined text-[22px]">psychology</span>
           </div>
           <div className="flex flex-col">
-            <h3 className="text-[14px] font-bold text-slate-900">Hindsight Memory Bank</h3>
+            <h3 className="text-[15px] font-bold text-slate-900">Hindsight Memory Bank</h3>
             <p className="text-[12px] text-slate-600 mt-0.5 leading-snug">
               Continuous retrospective memory learns from every post-mortem and protects upcoming releases.
             </p>
@@ -476,9 +492,9 @@ export default function DashboardPage() {
         </div>
         <Link
           href="/memories"
-          className="flex items-center justify-between px-3.5 py-2.5 rounded-lg bg-surface-container-low border border-slate-200 hover:bg-surface-container active:scale-[0.99] transition-all text-primary font-medium"
+          className="flex items-center justify-between px-4 py-3 rounded-xl liquid-glass-pill text-primary font-semibold"
         >
-          <span className="text-[12px] font-semibold text-slate-900">Explore Memory Bank (5 Indexed)</span>
+          <span className="text-[12px] font-bold text-slate-900">Explore Memory Bank (5 Indexed)</span>
           <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
         </Link>
       </section>

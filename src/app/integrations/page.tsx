@@ -98,7 +98,7 @@ export default function IntegrationsPage() {
               integrations.forEach((i) => testConnection(i.id));
               info("Probing All Integrations", "Dispatched ping requests to all connected endpoints.");
             }}
-            className="px-3 py-1.5 rounded bg-surface-elevated hover:bg-surface-elevated/80 text-text-secondary hover:text-text-primary border border-surface-border font-mono text-xs flex items-center space-x-1.5 transition-colors"
+            className="px-4 py-2 rounded-full liquid-glass-pill text-text-secondary hover:text-text-primary font-mono text-xs flex items-center space-x-1.5 transition-all shadow-sm active:scale-95"
           >
             <RotateCcw className="w-3.5 h-3.5 text-text-muted" />
             <span>Probe All Heartbeats</span>
@@ -117,10 +117,10 @@ export default function IntegrationsPage() {
             <motion.div
               key={item.id}
               variants={fadeInVariants}
-              className={`bg-surface border rounded p-4 space-y-3 flex flex-col justify-between transition-colors shadow-panel ${
+              className={`liquid-glass-card rounded-2xl p-5 space-y-3 flex flex-col justify-between transition-all shadow-sm hover:shadow-md ${
                 isHindsight
-                  ? "border-signal/50 bg-surface-elevated/30"
-                  : "border-surface-border hover:border-surface-border/80"
+                  ? "border-sky-300 ring-1 ring-sky-300/30"
+                  : ""
               }`}
             >
               <div className="space-y-3">
@@ -201,7 +201,7 @@ export default function IntegrationsPage() {
                   whileTap={tapSubtle}
                   onClick={() => testConnection(item.id)}
                   disabled={testingThis}
-                  className="px-2.5 py-1 rounded bg-surface-elevated hover:bg-surface-elevated/80 text-text-primary text-[11px] border border-surface-border flex items-center space-x-1"
+                  className="px-3.5 py-1.5 rounded-full liquid-glass-pill text-text-primary text-[11px] flex items-center space-x-1 shadow-xs active:scale-95 font-semibold"
                 >
                   <Zap className={`w-3 h-3 ${testingThis ? "animate-spin text-signal" : "text-text-muted"}`} />
                   <span>{testingThis ? "PROBING..." : "TEST PING"}</span>

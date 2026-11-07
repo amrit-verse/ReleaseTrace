@@ -74,7 +74,7 @@ export default function SettingsPage() {
         {/* Section 1: Pre-Flight Gating Policy */}
         <motion.div
           variants={fadeInVariants}
-          className="bg-surface border border-surface-border rounded p-5 space-y-4 shadow-panel"
+          className="liquid-glass-card rounded-2xl p-5 space-y-4 shadow-sm"
         >
           <div className="flex items-center space-x-2 border-b border-surface-border pb-3">
             <ShieldCheck className="w-4 h-4 text-sage" />
@@ -160,7 +160,7 @@ export default function SettingsPage() {
         {/* Section 2: Hindsight Memory Engine Retention */}
         <motion.div
           variants={fadeInVariants}
-          className="bg-surface border border-surface-border rounded p-5 space-y-4 shadow-panel"
+          className="liquid-glass-card rounded-2xl p-5 space-y-4 shadow-sm"
         >
           <div className="flex items-center space-x-2 border-b border-surface-border pb-3">
             <BrainCircuit className="w-4 h-4 text-signal" />
@@ -223,7 +223,7 @@ export default function SettingsPage() {
         {/* Section 3: Incident Notifications & Webhooks */}
         <motion.div
           variants={fadeInVariants}
-          className="bg-surface border border-surface-border rounded p-5 space-y-4 shadow-panel"
+          className="liquid-glass-card rounded-2xl p-5 space-y-4 shadow-sm"
         >
           <div className="flex items-center space-x-2 border-b border-surface-border pb-3">
             <Bell className="w-4 h-4 text-risk-warning" />
@@ -279,9 +279,9 @@ export default function SettingsPage() {
             whileHover={hoverSubtle}
             whileTap={tapSubtle}
             type="submit"
-            className="px-5 py-2.5 rounded bg-signal text-canvas font-semibold flex items-center space-x-2 shadow-panel transition-colors"
+            className="px-6 py-3 rounded-full btn-catchy-primary font-semibold flex items-center space-x-2 shadow-lg hover:shadow-xl active:scale-95 transition-all text-xs cursor-pointer"
           >
-            <Save className="w-4 h-4" />
+            <Save className="w-4 h-4 text-amber-300" />
             <span>SAVE WORKSPACE SETTINGS</span>
           </motion.button>
         </div>
