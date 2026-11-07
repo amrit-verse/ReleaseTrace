@@ -44,11 +44,11 @@ export function PageHeader({
           </nav>
         )}
         <div className="flex items-center gap-2.5">
-          <h1 className="text-base font-semibold tracking-tight text-text-primary">{title}</h1>
+          <h1 className="text-[22px] lg:text-[28px] font-bold tracking-tight leading-tight text-text-primary">{title}</h1>
           {badge}
         </div>
         {subtitle && (
-          <p className="text-xs text-text-secondary mt-0.5 font-sans leading-normal">
+          <p className="text-[13px] text-text-secondary mt-1 font-sans leading-snug">
             {subtitle}
           </p>
         )}
