@@ -53,6 +53,8 @@ flowchart TB
     HEALTH["Integration health"]
     LAB["Learning Lab / fixtures"]
     RESOLVE["Engineer verifies resolution"]
+    MEMAPI["POST /api/memories\\nBearer-authenticated production write\\nor isolated demo write"]
+    ASSESSAPI["POST /api/assess\\nDirect assessment / explicit fixture"]
   end
 
   META -->|"Signed HTTPS event"| WH
@@ -66,9 +68,8 @@ flowchart TB
   NEON --> DEPLOYS
   HINDSIGHT --> MEM
   HEALTH --> NEON
-  RESOLVE -->|"Confirmed resolution event"| PROCESS
-  RESOLVE -->|"Retain only after confirmation"| HINDSIGHT
-  LAB -.->|"Explicit demo / fixture paths"| PROCESS
+  RESOLVE --> MEMAPI -->|"Validated confirmed case"| HINDSIGHT
+  LAB --> ASSESSAPI --> RECALL
 ```
 
 ## 2. Release event lifecycle
@@ -168,26 +169,20 @@ Hindsight is not the source of truth for the current deployment. Current evidenc
 ```mermaid
 sequenceDiagram
   participant Engineer
-  participant UI as ReleaseTrace UI / API
-  participant DB as Neon + Prisma
-  participant Job as Inngest
-  participant H as Hindsight
+  participant API as POST /api/memories
+  participant Gate as Authorization + Zod validation
+  participant H as Hindsight Cloud
 
-  Engineer->>UI: Submit root cause, mitigation, confirmation
-  UI->>UI: Check bearer authorization or explicit demo mode
-  UI->>UI: Validate verified-memory schema + confirmation
-  UI->>Job: releasetrace/resolution.confirmed
-  Job->>Job: Check retainToHindsight
-  alt Retention requested and confirmed
-    Job->>H: Write to project-scoped bank
-    H-->>Job: Retention result
-  else Not retained
-    Job-->>UI: Skip memory write
-  end
-  Job->>DB: Record operational resolution / workflow outcome
+  Engineer->>API: Submit root cause, mitigation, confirmation
+  API->>Gate: Bearer authorization or explicit demo mode
+  Gate->>Gate: Require isConfirmed=true and validate memory schema
+  Gate-->>API: Validated, attributed memory
+  API->>H: ExperienceRetentionWorkflow.retainVerifiedExperience
+  H-->>API: Bank ID, document ID, retention result
+  API-->>Engineer: 201 LIVE_RETAINED / DEMO / MOCK status
 ```
 
-The memory-retention path validates the structured memory, requires explicit confirmation, assigns a deterministic document identifier for retry safety, and retries transient write failures. Demo-mode records are routed to a separate demo project/bank rather than the canonical production project bank. A bearer token is a shared authorization credential; it should not be presented as proof of a uniquely identified individual engineer.
+The memory-retention path validates the structured memory, requires explicit confirmation, assigns a deterministic document identifier for retry safety, and retries transient write failures. Demo-mode records are routed to a separate demo project/bank rather than the canonical production project bank. A bearer token is a shared authorization credential; it should not be presented as proof of a uniquely identified individual engineer. The `POST /api/memories` route invokes this retention workflow directly; it does not dispatch the Inngest resolution event. A separate `processVerifiedResolution` Inngest handler is registered for `releasetrace/resolution.confirmed` and persists a Resolution record, but that is a distinct event path.
 
 Relevant files:
 - `src/app/api/memories/route.ts`

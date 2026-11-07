@@ -136,25 +136,48 @@ export function QuickReleaseSimulatorModal() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          // Keep sandbox assessments in their own project-scoped memory bank.
+          projectId: "demo-releasetrace-simulator",
           service: currentPreset.payload.service,
-          environment: currentPreset.payload.environment,
-          commitSha: currentPreset.payload.evidence.commitSha,
-          commitMessage: currentPreset.payload.evidence.commitMessage,
-          changedFiles: currentPreset.payload.evidence.changedFiles,
-          hasPendingMigrations: currentPreset.payload.evidence.hasPendingMigrations,
-          migrationNames: currentPreset.payload.evidence.migrationNames,
-          databaseType: currentPreset.payload.environmentContext.databaseType,
-          databaseVersion: currentPreset.payload.environmentContext.databaseVersion,
-          poolSize: currentPreset.payload.environmentContext.poolSize,
-          replicas: currentPreset.payload.environmentContext.replicas,
+          commitHash: currentPreset.payload.evidence.commitSha,
+          branch: "release-simulator",
+          targetEnvironment:
+            currentPreset.payload.environment === "production" ? "production" : "staging",
+          environmentNotes: currentPreset.payload.evidence.commitMessage,
+          gitDiffSummary: {
+            filesChanged: currentPreset.payload.evidence.changedFiles,
+            additions: 0,
+            deletions: 0,
+            hasDatabaseMigrations: currentPreset.payload.evidence.hasPendingMigrations,
+            migrationDetails: currentPreset.payload.evidence.migrationNames.join(", "),
+          },
+          environment: {
+            runtime: "nodejs@22",
+            database: {
+              type: currentPreset.payload.environmentContext.databaseType,
+              version: currentPreset.payload.environmentContext.databaseVersion,
+              poolSize: currentPreset.payload.environmentContext.poolSize,
+            },
+            infrastructure: {
+              provider: "vercel",
+              region: "unknown",
+              replicas: currentPreset.payload.environmentContext.replicas,
+            },
+            featureFlags: {},
+            envVariables: {},
+            dependencies: {},
+          },
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(`Assessment API returned HTTP ${res.status}`);
+        const details = Array.isArray(data.validationErrors)
+          ? data.validationErrors.join("; ")
+          : data.error;
+        throw new Error(details || `Assessment API returned HTTP ${res.status}`);
       }
 
-      const data = await res.json();
       setResult(data);
     } catch (err: any) {
       setError(err.message || "Failed to run simulation");
@@ -319,7 +342,7 @@ export function QuickReleaseSimulatorModal() {
                   <RiskBadge classification={result.riskClassification || result.overallRisk || "NOMINAL"} />
                 </div>
                 <div className="text-xs font-mono text-text-muted">
-                  Score: <strong className="text-text-primary text-sm">{result.riskScore ?? 45} / 100</strong>
+                  Confidence: <strong className="text-text-primary text-sm">{result.confidence || "Not reported"}</strong>
                 </div>
               </div>
 
@@ -391,7 +414,7 @@ export function QuickReleaseSimulatorModal() {
         {/* Footer */}
         <div className="p-4 border-t border-surface-border bg-surface-elevated flex items-center justify-between font-mono text-xs">
           <span className="text-text-muted text-[11px]">
-            Uses real `/api/assess` Intelligence Engine & Groq LLM
+            Runs `/api/assess`; live memory and model providers depend on server configuration
           </span>
           <button
             onClick={() => setIsSimulatorModalOpen(false)}
