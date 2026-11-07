@@ -1,12 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion } from "motion/react";
 import {
   BrainCircuit,
   ShieldCheck,
   Bell,
-  Save,
   Download,
 } from "lucide-react";
 import { mockDefaultSettings } from "@/data/mockData";
@@ -22,12 +21,7 @@ import {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<WorkspaceSettings>(mockDefaultSettings);
-  const { success, info } = useToast();
-
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    success("Settings Saved", "Workspace policy configuration updated and distributed to active CI runners.");
-  };
+  const { info } = useToast();
 
   const handleExportAudit = () => {
     const dataStr =
@@ -50,11 +44,11 @@ export default function SettingsPage() {
     >
       {/* Header */}
       <PageHeader
-        title="Workspace & Policy Configuration"
-        subtitle="Pre-flight deterministic gating thresholds, Hindsight retention windows, and notification webhooks."
+        title="Workspace & policy draft"
+        subtitle="Edit and export a proposed policy configuration. These values are not yet persisted or enforced by the release pipeline."
         badge={
           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-elevated text-signal border border-surface-border">
-            ACTIVE POLICY
+            LOCAL DRAFT
           </span>
         }
         actions={
@@ -70,7 +64,7 @@ export default function SettingsPage() {
         }
       />
 
-      <form onSubmit={handleSave} className="space-y-6">
+      <div className="space-y-6">
         {/* Section 1: Pre-Flight Gating Policy */}
         <motion.div
           variants={fadeInVariants}
@@ -273,19 +267,10 @@ export default function SettingsPage() {
           </div>
         </motion.div>
 
-        {/* Save Button */}
-        <div className="flex justify-end space-x-3 font-mono text-xs">
-          <motion.button
-            whileHover={hoverSubtle}
-            whileTap={tapSubtle}
-            type="submit"
-            className="px-5 py-2.5 rounded bg-signal text-canvas font-semibold flex items-center space-x-2 shadow-panel transition-colors"
-          >
-            <Save className="w-4 h-4" />
-            <span>SAVE WORKSPACE SETTINGS</span>
-          </motion.button>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900">
+          This editor currently holds values in page state only. Changes are not saved to Neon, Vercel, Hindsight, or CI runners. Use <strong>Export Config JSON</strong> to download this draft.
         </div>
-      </form>
+      </div>
     </motion.div>
   );
 }

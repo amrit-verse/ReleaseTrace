@@ -1,326 +1,299 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import Link from "next/link";
-import { motion } from "motion/react";
+import { useEffect, useMemo, useState } from "react";
 import {
+  ArrowDown,
+  ArrowUp,
+  ExternalLink,
+  GitCommit,
+  RefreshCw,
   Search,
-  ArrowUpDown,
-  ChevronRight,
-  BrainCircuit,
-  RotateCcw,
-  Database,
+  WifiOff,
 } from "lucide-react";
-import { mockDeployments } from "@/data/mockData";
-import { RiskBadge, StatusBadge } from "@/components/ui/StatusBadge";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { EmptyState } from "@/components/ui/EmptyState";
-import {
-  staggerContainer,
-  hoverSubtle,
-  tapSubtle,
-} from "@/lib/motion";
 
-export default function DeploymentsHistoryPage() {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState<string>("ALL");
-  const [selectedEnv, setSelectedEnv] = useState<string>("ALL");
-  const [sortBy, setSortBy] = useState<"timestamp" | "riskScore" | "service">("timestamp");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+type DeploymentRow = {
+  id: string;
+  provider: string;
+  providerDeploymentId: string;
+  commitSha: string;
+  branch: string;
+  environment: string;
+  status: string;
+  url: string | null;
+  startedAt: string;
+  completedAt: string | null;
+  createdAt: string;
+  assessment: {
+    overallCategory: string;
+    summary: string;
+    recommendedAction: string;
+  } | null;
+};
 
-  // Filtered and sorted deployments
-  const filtered = useMemo(() => {
-    return mockDeployments
-      .filter((dep) => {
-        const matchesSearch =
-          dep.service.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          dep.commitHash.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          dep.commitMessage.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          dep.author.name.toLowerCase().includes(searchQuery.toLowerCase());
+type DeploymentResponse = {
+  projectId: string;
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+  deployments: DeploymentRow[];
+};
 
-        const matchesStatus =
-          selectedStatus === "ALL" || dep.status.toLowerCase() === selectedStatus.toLowerCase();
+function titleCase(value: string) {
+  return value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+}
 
-        const matchesEnv =
-          selectedEnv === "ALL" || dep.environment.toLowerCase() === selectedEnv.toLowerCase();
+function dateTime(value: string) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Time unavailable"
+    : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
 
-        return matchesSearch && matchesStatus && matchesEnv;
-      })
-      .sort((a, b) => {
-        let comparison = 0;
-        if (sortBy === "timestamp") {
-          comparison = new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
-        } else if (sortBy === "riskScore") {
-          comparison = b.riskScore - a.riskScore;
-        } else if (sortBy === "service") {
-          comparison = a.service.localeCompare(b.service);
-        }
-        return sortOrder === "desc" ? comparison : -comparison;
-      });
-  }, [searchQuery, selectedStatus, selectedEnv, sortBy, sortOrder]);
-
-  const toggleSort = (field: "timestamp" | "riskScore" | "service") => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === "desc" ? "asc" : "desc");
-    } else {
-      setSortBy(field);
-      setSortOrder("desc");
-    }
-  };
-
-  const resetFilters = () => {
-    setSearchQuery("");
-    setSelectedStatus("ALL");
-    setSelectedEnv("ALL");
-    setSortBy("timestamp");
-    setSortOrder("desc");
-  };
+function StatusPill({ value, risk = false }: { value: string; risk?: boolean }) {
+  const normalized = value.toUpperCase();
+  const style = risk
+    ? normalized === "CRITICAL"
+      ? "border-red-200 bg-red-50 text-red-800"
+      : normalized === "HIGH_RISK" || normalized === "HIGH"
+        ? "border-amber-200 bg-amber-50 text-amber-800"
+        : normalized === "ELEVATED"
+          ? "border-orange-200 bg-orange-50 text-orange-800"
+          : normalized === "VERIFIED" || normalized === "NOMINAL"
+            ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+            : "border-surface-border bg-surface-subtle text-text-secondary"
+    : normalized === "SUCCEEDED" || normalized === "READY" || normalized === "PASSED"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+      : normalized === "FAILED" || normalized === "ERROR" || normalized === "BLOCKED"
+        ? "border-red-200 bg-red-50 text-red-800"
+        : normalized === "CANCELED" || normalized === "ROLLED_BACK"
+          ? "border-amber-200 bg-amber-50 text-amber-800"
+          : "border-surface-border bg-surface-subtle text-text-secondary";
 
   return (
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      animate="visible"
-      className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto w-full"
-    >
-      {/* Page Header */}
-      <PageHeader
-        title="Deployment Register"
-        subtitle="Audited repository releases, Prisma schema migrations, and correlated Hindsight intelligence."
-        badge={
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-elevated text-signal border border-surface-border">
-            {filtered.length} RUNS
-          </span>
-        }
-        actions={
-          <motion.button
-            whileHover={hoverSubtle}
-            whileTap={tapSubtle}
-            onClick={resetFilters}
-            className="px-3 py-1.5 rounded bg-surface-elevated hover:bg-surface-elevated/80 text-text-secondary hover:text-text-primary border border-surface-border text-xs font-mono flex items-center gap-1.5 transition-colors"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset Filters</span>
-          </motion.button>
-        }
-      />
-
-      {/* Filter and Search Bar */}
-      <div className="bg-surface border border-surface-border rounded p-3.5 grid grid-cols-1 md:grid-cols-4 gap-3 font-mono text-xs shadow-panel">
-        {/* Search */}
-        <div className="md:col-span-2 relative">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
-            type="text"
-            placeholder="Search service, commit SHA, message, author..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-surface-elevated border border-surface-border rounded pl-8 pr-3 py-2 text-text-primary placeholder-text-muted focus:outline-none focus:border-signal/60 font-mono text-xs"
-          />
-        </div>
-
-        {/* Status Filter */}
-        <div>
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="w-full bg-surface-elevated border border-surface-border rounded px-3 py-2 text-text-secondary focus:outline-none focus:border-signal/60 font-mono text-xs"
-          >
-            <option value="ALL">Status: All Statuses</option>
-            <option value="passed">Passed</option>
-            <option value="at_risk">At Risk</option>
-            <option value="blocked">Blocked</option>
-            <option value="rolled_back">Rolled Back</option>
-          </select>
-        </div>
-
-        {/* Environment Filter */}
-        <div>
-          <select
-            value={selectedEnv}
-            onChange={(e) => setSelectedEnv(e.target.value)}
-            className="w-full bg-surface-elevated border border-surface-border rounded px-3 py-2 text-text-secondary focus:outline-none focus:border-signal/60 font-mono text-xs"
-          >
-            <option value="ALL">Environment: All Environments</option>
-            <option value="production">Production</option>
-            <option value="staging">Staging</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Deployments Table / List */}
-      <div className="bg-surface border border-surface-border rounded overflow-hidden font-sans shadow-panel">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-surface-elevated/80 border-b border-surface-border font-mono text-[10px] text-text-muted uppercase tracking-wider">
-              <tr>
-                <th
-                  onClick={() => toggleSort("service")}
-                  className="py-3 px-4 cursor-pointer hover:text-text-primary select-none"
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Service & Commit SHA</span>
-                    <ArrowUpDown className="w-3 h-3 text-text-muted" />
-                  </div>
-                </th>
-                <th className="py-3 px-4">Target Environment</th>
-                <th
-                  onClick={() => toggleSort("riskScore")}
-                  className="py-3 px-4 cursor-pointer hover:text-text-primary select-none"
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Risk Index</span>
-                    <ArrowUpDown className="w-3 h-3 text-text-muted" />
-                  </div>
-                </th>
-                <th className="py-3 px-4">Hindsight Recall</th>
-                <th className="py-3 px-4">Pipeline Status</th>
-                <th
-                  onClick={() => toggleSort("timestamp")}
-                  className="py-3 px-4 cursor-pointer hover:text-text-primary select-none"
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Timestamp</span>
-                    <ArrowUpDown className="w-3 h-3 text-text-muted" />
-                  </div>
-                </th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-surface-border font-mono text-text-secondary">
-              {filtered.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="p-0">
-                    <EmptyState
-                      title="No deployment runs match filters"
-                      description="Try clearing search query or adjusting status and environment filters."
-                      action={{
-                        label: "Reset Filters",
-                        onClick: resetFilters,
-                      }}
-                    />
-                  </td>
-                </tr>
-              ) : (
-                filtered.map((dep) => {
-                  const hasMemory = dep.recalledMemories.length > 0;
-                  const highestMemory = dep.recalledMemories[0];
-
-                  return (
-                    <motion.tr
-                      key={dep.id}
-                      layout
-                      className="hover:bg-surface-elevated/40 transition-colors group"
-                    >
-                      {/* Service & Commit */}
-                      <td className="py-3 px-4 font-sans">
-                        <div className="flex flex-col space-y-0.5">
-                          <div className="flex items-center space-x-2">
-                            <Link
-                              href={`/deployments/${dep.id}`}
-                              className="font-semibold text-text-primary hover:text-signal transition-colors text-xs"
-                            >
-                              {dep.service}
-                            </Link>
-                            <span className="font-mono text-[10px] text-text-muted">
-                              {dep.version}
-                            </span>
-                          </div>
-                          <span className="text-[11px] text-text-muted font-mono flex items-center space-x-1 truncate max-w-xs">
-                            <span className="text-signal/80">{dep.commitHash.substring(0, 8)}</span>
-                            <span>•</span>
-                            <span className="truncate">{dep.commitMessage}</span>
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Environment & Vercel/Neon Target */}
-                      <td className="py-3 px-4">
-                        <div className="flex flex-col text-[11px]">
-                          <span className="text-text-primary uppercase font-semibold font-mono">
-                            {dep.environment}
-                          </span>
-                          <span className="text-text-muted text-[10px] truncate max-w-[150px] font-mono flex items-center gap-1">
-                            <Database className="w-2.5 h-2.5 text-signal" />
-                            <span>Vercel / Neon</span>
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Risk Index */}
-                      <td className="py-3 px-4">
-                        <div className="flex items-center space-x-2">
-                          <RiskBadge classification={dep.riskClassification} size="sm" />
-                          <span
-                            className={`font-mono text-xs font-bold ${
-                              dep.riskScore >= 80
-                                ? "text-risk-critical"
-                                : dep.riskScore >= 60
-                                ? "text-risk-warning"
-                                : "text-sage"
-                            }`}
-                          >
-                            {dep.riskScore}
-                          </span>
-                        </div>
-                      </td>
-
-                      {/* Hindsight Memory Recalled */}
-                      <td className="py-3 px-4">
-                        {hasMemory ? (
-                          <div className="inline-flex items-center gap-1.5 text-signal bg-signal/10 border border-signal/30 px-2 py-0.5 rounded text-[11px] font-mono">
-                            <BrainCircuit className="w-3.5 h-3.5 text-signal shrink-0" />
-                            <span className="font-semibold truncate max-w-[120px]">
-                              {highestMemory.id}
-                            </span>
-                            <span className="text-signal/80 text-[10px]">
-                              ({((highestMemory.similarityScore || 0) * 100).toFixed(0)}%)
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-text-muted text-[11px]">— No prior match</span>
-                        )}
-                      </td>
-
-                      {/* Pipeline Status */}
-                      <td className="py-3 px-4">
-                        <StatusBadge status={dep.status} />
-                      </td>
-
-                      {/* Timestamp */}
-                      <td className="py-3 px-4 text-[11px] text-text-secondary">
-                        <div>{new Date(dep.timestamp).toLocaleDateString()}</div>
-                        <div className="text-text-muted text-[10px]">
-                          {new Date(dep.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
-                      </td>
-
-                      {/* Action */}
-                      <td className="py-3 px-4 text-right">
-                        <Link href={`/deployments/${dep.id}`}>
-                          <motion.div
-                            whileHover={hoverSubtle}
-                            whileTap={tapSubtle}
-                            className="px-2.5 py-1 rounded bg-surface-elevated hover:bg-surface-elevated/80 text-text-secondary hover:text-text-primary text-xs font-mono border border-surface-border inline-flex items-center space-x-1 transition-colors"
-                          >
-                            <span>Inspect</span>
-                            <ChevronRight className="w-3.5 h-3.5 text-text-muted" />
-                          </motion.div>
-                        </Link>
-                      </td>
-                    </motion.tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </motion.div>
+    <span className={`inline-flex rounded-full border px-2.5 py-1 font-mono text-[10px] font-semibold uppercase ${style}`}>
+      {titleCase(value)}
+    </span>
   );
 }
 
+export default function DeploymentsHistoryPage() {
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("ALL");
+  const [environment, setEnvironment] = useState("ALL");
+  const [pageNumber, setPageNumber] = useState(1);
+  const [data, setData] = useState<DeploymentResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      page: String(pageNumber),
+      pageSize: "20",
+      status,
+      environment,
+    });
+    if (query.trim()) params.set("q", query.trim());
+
+    setLoading(true);
+    setError(null);
+
+    fetch(`/api/deployments?${params.toString()}`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || `Request failed (HTTP ${response.status})`);
+        return payload as DeploymentResponse;
+      })
+      .then(setData)
+      .catch((cause: unknown) => {
+        if (cause instanceof Error && cause.name === "AbortError") return;
+        setError(cause instanceof Error ? cause.message : "Could not load deployment history.");
+        setData(null);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+
+    return () => controller.abort();
+  }, [query, status, environment, pageNumber, refreshKey]);
+
+  useEffect(() => {
+    setPageNumber(1);
+  }, [query, status, environment]);
+
+  const visibleRange = useMemo(() => {
+    if (!data || data.total === 0) return "0 releases";
+    const first = (data.page - 1) * data.pageSize + 1;
+    const last = Math.min(data.page * data.pageSize, data.total);
+    return `${first}–${last} of ${data.total}`;
+  }, [data]);
+
+  return (
+    <div className="mx-auto w-full max-w-7xl space-y-6 p-4 lg:p-6">
+      <PageHeader
+        title="Deployment register"
+        subtitle="Recorded deployment events and their persisted risk assessments for this project."
+        badge={
+          <span className="rounded-full border border-surface-border bg-surface px-2.5 py-1 font-mono text-[10px] font-semibold uppercase text-text-secondary">
+            {data ? visibleRange : "Live data"}
+          </span>
+        }
+        actions={
+          <button
+            type="button"
+            onClick={() => setRefreshKey((key) => key + 1)}
+            disabled={loading}
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-surface-border bg-surface px-3 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-subtle disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        }
+      />
+
+      <section className="rounded-xl border border-surface-border bg-surface p-3 shadow-panel-subtle">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_180px_180px]">
+          <label className="relative block">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search commit, branch or provider deployment ID"
+              className="min-h-10 w-full rounded-lg border border-surface-border bg-surface-subtle pl-9 pr-3 text-xs text-text-primary outline-none transition placeholder:text-text-muted focus:border-signal"
+            />
+          </label>
+          <select
+            aria-label="Filter by status"
+            value={status}
+            onChange={(event) => setStatus(event.target.value)}
+            className="min-h-10 rounded-lg border border-surface-border bg-surface-subtle px-3 text-xs text-text-secondary outline-none focus:border-signal"
+          >
+            <option value="ALL">All statuses</option>
+            <option value="READY">Ready</option>
+            <option value="ERROR">Error</option>
+            <option value="CANCELED">Canceled</option>
+            <option value="BLOCKED">Blocked</option>
+            <option value="IN_PROGRESS">In progress</option>
+          </select>
+          <select
+            aria-label="Filter by environment"
+            value={environment}
+            onChange={(event) => setEnvironment(event.target.value)}
+            className="min-h-10 rounded-lg border border-surface-border bg-surface-subtle px-3 text-xs text-text-secondary outline-none focus:border-signal"
+          >
+            <option value="ALL">All environments</option>
+            <option value="production">Production</option>
+            <option value="preview">Preview</option>
+            <option value="staging">Staging</option>
+          </select>
+        </div>
+      </section>
+
+      {error && (
+        <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+          <WifiOff className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-semibold">Could not retrieve deployment history</p>
+            <p className="mt-0.5 text-xs">{error}</p>
+          </div>
+        </div>
+      )}
+
+      <section className="overflow-hidden rounded-xl border border-surface-border bg-surface shadow-panel-subtle">
+        <div className="flex items-center justify-between border-b border-surface-border px-4 py-3">
+          <div>
+            <h2 className="text-sm font-bold text-text-primary">Release events</h2>
+            <p className="mt-0.5 text-xs text-text-muted">Sorted by most recently recorded.</p>
+          </div>
+          {loading && <span className="text-[10px] font-mono uppercase text-text-muted">Loading…</span>}
+        </div>
+
+        {!loading && data?.deployments.length === 0 && (
+          <div className="flex min-h-56 flex-col items-center justify-center px-4 text-center">
+            <GitCommit className="h-8 w-8 text-text-muted" />
+            <p className="mt-3 text-sm font-semibold text-text-primary">No matching releases</p>
+            <p className="mt-1 max-w-sm text-xs leading-relaxed text-text-muted">
+              No deployment events match these filters. Clear the search or wait for the next signed CI event.
+            </p>
+          </div>
+        )}
+
+        {data && data.deployments.length > 0 && (
+          <div className="divide-y divide-surface-border">
+            {data.deployments.map((deployment) => (
+              <article key={deployment.id} className="flex flex-col gap-3 p-4 transition hover:bg-brand-subtle/30 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusPill value={deployment.status} />
+                    {deployment.assessment && <StatusPill value={deployment.assessment.overallCategory} risk />}
+                    <span className="text-[10px] font-mono uppercase tracking-wide text-text-muted">
+                      {titleCase(deployment.provider)} · {titleCase(deployment.environment)}
+                    </span>
+                  </div>
+                  <p className="truncate font-mono text-xs font-semibold text-text-primary">
+                    {deployment.commitSha ? deployment.commitSha.slice(0, 12) : deployment.providerDeploymentId}
+                  </p>
+                  <p className="text-xs text-text-muted">
+                    {deployment.branch ? `Branch ${deployment.branch} · ` : ""}{dateTime(deployment.startedAt || deployment.createdAt)}
+                  </p>
+                  {deployment.assessment?.summary && (
+                    <p className="max-w-3xl text-xs leading-relaxed text-text-secondary">
+                      {deployment.assessment.summary}
+                    </p>
+                  )}
+                  {deployment.assessment?.recommendedAction && (
+                    <p className="max-w-3xl text-xs leading-relaxed text-signal">
+                      Next: {deployment.assessment.recommendedAction}
+                    </p>
+                  )}
+                </div>
+                {deployment.url ? (
+                  <a
+                    href={deployment.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-surface-border px-3 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-subtle hover:text-signal"
+                  >
+                    Open deployment <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                ) : (
+                  <span className="text-[10px] font-mono uppercase text-text-muted">No deployment URL</span>
+                )}
+              </article>
+            ))}
+          </div>
+        )}
+
+        {data && data.totalPages > 1 && (
+          <div className="flex items-center justify-between border-t border-surface-border px-4 py-3">
+            <span className="text-xs text-text-muted">Page {data.page} of {data.totalPages}</span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPageNumber((value) => Math.max(1, value - 1))}
+                disabled={pageNumber <= 1 || loading}
+                className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-surface-border px-3 text-xs font-semibold text-text-secondary disabled:opacity-40"
+              >
+                <ArrowDown className="h-3.5 w-3.5 rotate-90" /> Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => setPageNumber((value) => Math.min(data.totalPages, value + 1))}
+                disabled={pageNumber >= data.totalPages || loading}
+                className="inline-flex min-h-9 items-center gap-1 rounded-lg border border-surface-border px-3 text-xs font-semibold text-text-secondary disabled:opacity-40"
+              >
+                Next <ArrowUp className="h-3.5 w-3.5 rotate-90" />
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}

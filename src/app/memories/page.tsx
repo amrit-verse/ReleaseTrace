@@ -1,410 +1,255 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { FormEvent, useCallback, useEffect, useState } from "react";
 import {
+  AlertCircle,
   BrainCircuit,
+  CheckCircle2,
+  Database,
+  RefreshCw,
   Search,
-  Plus,
-  RotateCcw,
-  Sparkles,
-  X,
+  Tag,
+  WifiOff,
 } from "lucide-react";
-import { HindsightMemory } from "@/types";
-import { mockMemories } from "@/data/mockData";
-import { HindsightMemoryCard } from "@/components/ui/HindsightMemoryCard";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { useToast } from "@/components/ui/ToastProvider";
-import { getActiveMemories, retainNewMemory, resetMemoriesToDefault } from "@/lib/memoryEngine";
-import {
-  fadeInVariants,
-  staggerContainer,
-  modalVariants,
-  backdropVariants,
-  hoverSubtle,
-  tapSubtle,
-} from "@/lib/motion";
+
+type RecallMemory = {
+  id?: string;
+  memoryId?: string;
+  text?: string;
+  content?: string;
+  context?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+  scores?: {
+    final?: number;
+    semantic?: number;
+  };
+  [key: string]: unknown;
+};
+
+type MemoryResponse = {
+  status: string;
+  bankId: string;
+  projectId: string;
+  total: number;
+  memories: RecallMemory[];
+  source: string;
+  isMock?: boolean;
+};
+
+function metadataValue(metadata: Record<string, unknown> | undefined, keys: string[]) {
+  for (const key of keys) {
+    const value = metadata?.[key];
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return undefined;
+}
+
+function memoryBody(memory: RecallMemory) {
+  if (typeof memory.text === "string" && memory.text.trim()) return memory.text;
+  if (typeof memory.content === "string" && memory.content.trim()) return memory.content;
+  if (typeof memory.context === "string" && memory.context.trim()) return memory.context;
+  return JSON.stringify(memory, null, 2);
+}
+
+function scoreLabel(value?: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  return `${(Math.max(0, Math.min(1, value)) * 100).toFixed(1)}%`;
+}
 
 export default function MemoryExplorerPage() {
-  const [memories, setMemories] = useState<HindsightMemory[]>(mockMemories);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedService, setSelectedService] = useState<string>("ALL");
-  const [selectedSeverity, setSelectedSeverity] = useState<string>("ALL");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const { success, info } = useToast();
+  const [searchInput, setSearchInput] = useState("");
+  const [query, setQuery] = useState("");
+  const [data, setData] = useState<MemoryResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // New Memory Modal State
-  const [newTitle, setNewTitle] = useState("");
-  const [newService, setNewService] = useState("order-service");
-  const [newSeverity, setNewSeverity] = useState<"SEV-1" | "SEV-2">("SEV-1");
-  const [newSymptoms, setNewSymptoms] = useState("");
-  const [newRootCause, setNewRootCause] = useState("");
-  const [newFailedApproaches, setNewFailedApproaches] = useState("");
-  const [newResolution, setNewResolution] = useState("");
-  const [newAuthor, setNewAuthor] = useState("amrit.lead@engineering.internal");
-  const [newTicket, setNewTicket] = useState("INC-9912");
-
-  useEffect(() => {
-    setMemories(getActiveMemories());
+  const loadMemories = useCallback(async (search: string, signal?: AbortSignal) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const params = new URLSearchParams();
+      if (search.trim()) params.set("q", search.trim());
+      const suffix = params.toString();
+      const response = await fetch(`/api/memories${suffix ? `?${suffix}` : ""}`, {
+        cache: "no-store",
+        signal,
+      });
+      const payload = (await response.json()) as MemoryResponse & { error?: string; details?: string };
+      if (!response.ok) {
+        throw new Error(payload.error || payload.details || `Memory recall failed (HTTP ${response.status})`);
+      }
+      setData(payload);
+    } catch (cause) {
+      if (cause instanceof Error && cause.name === "AbortError") return;
+      setData(null);
+      setError(cause instanceof Error ? cause.message : "Unable to retrieve Hindsight memories.");
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
   }, []);
 
-  const handleCreateMemory = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle || !newRootCause || !newResolution) {
-      alert("Please fill in the required fields: Title, Root Cause, and Resolution.");
-      return;
-    }
+  useEffect(() => {
+    const controller = new AbortController();
+    void loadMemories(query, controller.signal);
+    return () => controller.abort();
+  }, [loadMemories, query, refreshKey]);
 
-    const symptomsList = newSymptoms
-      .split("\n")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setQuery(searchInput.trim());
+  }
 
-    const failedList = newFailedApproaches
-      .split("\n")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-
-    const created = retainNewMemory({
-      title: newTitle,
-      service: newService,
-      environment: "production",
-      severity: newSeverity,
-      incidentDate: new Date().toISOString(),
-      symptoms: symptomsList.length > 0 ? symptomsList : ["Degraded throughput and latency anomaly."],
-      rootCause: newRootCause,
-      failedApproaches: failedList.length > 0 ? failedList : ["Standard pod restart did not clear lock state."],
-      resolution: newResolution,
-      provenance: {
-        gitCommit: "commit-" + Math.random().toString(36).substring(2, 9),
-        incidentTicket: newTicket || "INC-9912",
-        runbookUrl: "https://runbooks.internal/incident/" + (newTicket || "INC-9912"),
-        postMortemAuthor: newAuthor,
-        signoffEngineer: "marcus.vance@engineering.internal",
-        timestamp: new Date().toISOString(),
-        serviceVersion: "v2.0.0",
-        outageMinutes: 35,
-      },
-      tags: ["post-mortem", newService, "hindsight-retention"],
-      source: "LOCAL_ENGINE",
-    });
-
-    setMemories(getActiveMemories());
-    setIsModalOpen(false);
-    success("Memory Retained", `Incident experience ${created.id} indexed into Hindsight memory bank.`);
-
-    // Reset form
-    setNewTitle("");
-    setNewSymptoms("");
-    setNewRootCause("");
-    setNewFailedApproaches("");
-    setNewResolution("");
-  };
-
-  const handleReset = () => {
-    const defaultMems = resetMemoriesToDefault();
-    setMemories(defaultMems);
-    info("Memory Bank Reset", "Reset to canonical baseline fixtures.");
-  };
-
-  // Filter logic
-  const filteredMemories = useMemo(() => {
-    return memories.filter((mem) => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        mem.title.toLowerCase().includes(q) ||
-        mem.id.toLowerCase().includes(q) ||
-        mem.rootCause.toLowerCase().includes(q) ||
-        mem.service.toLowerCase().includes(q) ||
-        mem.provenance.incidentTicket.toLowerCase().includes(q) ||
-        mem.tags.some((t) => t.toLowerCase().includes(q));
-
-      const matchesService =
-        selectedService === "ALL" || mem.service.toLowerCase() === selectedService.toLowerCase();
-
-      const matchesSeverity =
-        selectedSeverity === "ALL" || mem.severity.toLowerCase() === selectedSeverity.toLowerCase();
-
-      return matchesSearch && matchesService && matchesSeverity;
-    });
-  }, [memories, searchQuery, selectedService, selectedSeverity]);
+  const isMock = data?.isMock || data?.source === "HINDSIGHT_MOCK_TRANSPORT";
 
   return (
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      animate="visible"
-      className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto w-full font-sans"
-    >
-      {/* Header */}
+    <div className="mx-auto w-full max-w-7xl space-y-6 p-4 lg:p-6">
       <PageHeader
-        title="Hindsight Memory Explorer"
-        subtitle="Persistent engineering memories, failure signatures, confirmed root causes, and verified mitigations."
+        title="Hindsight memory explorer"
+        subtitle="Search the configured project memory bank. Retrieved history is context for assessment, not proof of current deployment state."
         badge={
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-elevated text-signal border border-surface-border">
-            {memories.length} INDEXED
+          <span className="rounded-full border border-surface-border bg-surface px-2.5 py-1 font-mono text-[10px] font-semibold uppercase text-text-secondary">
+            {data ? `${data.total} recalled` : "Live recall"}
           </span>
         }
         actions={
-          <div className="flex items-center space-x-2 font-mono text-xs">
-            <motion.button
-              whileHover={hoverSubtle}
-              whileTap={tapSubtle}
-              onClick={() => setIsModalOpen(true)}
-              className="px-3 py-1.5 rounded bg-signal text-canvas font-semibold flex items-center space-x-1.5 transition-colors shadow-panel"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Retain New Incident</span>
-            </motion.button>
-            <motion.button
-              whileHover={hoverSubtle}
-              whileTap={tapSubtle}
-              onClick={handleReset}
-              className="px-2.5 py-1.5 rounded bg-surface-elevated hover:bg-surface-elevated/80 text-text-secondary hover:text-text-primary border border-surface-border flex items-center space-x-1 transition-colors"
-              title="Reset to default fixtures"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Reset Bank</span>
-            </motion.button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setRefreshKey((key) => key + 1)}
+            disabled={loading}
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-surface-border bg-surface px-3 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-subtle disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
         }
       />
 
-      {/* Filter & Search Bar */}
-      <div className="bg-surface border border-surface-border rounded p-3.5 grid grid-cols-1 md:grid-cols-4 gap-3 font-mono text-xs shadow-panel">
-        <div className="md:col-span-2 relative">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+      <div className={`rounded-lg border p-3 text-xs leading-relaxed ${isMock ? "border-amber-200 bg-amber-50 text-amber-900" : "border-sky-200 bg-sky-50 text-sky-900"}`}>
+        {isMock
+          ? "Hindsight is running in mock transport mode. These results are not evidence of persistence in Hindsight Cloud."
+          : "Recall is served by the configured Hindsight provider. Similarity scores rank retrieval relevance; an engineer must still verify incident facts before retention."}
+      </div>
+
+      <form onSubmit={handleSearch} className="flex flex-col gap-2 rounded-xl border border-surface-border bg-surface p-3 shadow-panel-subtle sm:flex-row">
+        <label className="relative min-w-0 flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
           <input
-            type="text"
-            placeholder="Search symptoms, root causes, tickets (INC-8842)..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-surface-elevated border border-surface-border rounded pl-8 pr-3 py-2 text-text-primary placeholder-text-muted focus:outline-none focus:border-signal/60 font-mono text-xs"
+            value={searchInput}
+            onChange={(event) => setSearchInput(event.target.value)}
+            placeholder="Search incidents, symptoms, migrations, database failures…"
+            className="min-h-11 w-full rounded-lg border border-surface-border bg-surface-subtle pl-9 pr-3 text-xs text-text-primary outline-none transition placeholder:text-text-muted focus:border-signal"
           />
-        </div>
+        </label>
+        <button
+          type="submit"
+          disabled={loading}
+          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-signal px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+        >
+          <BrainCircuit className="h-3.5 w-3.5" />
+          Recall memories
+        </button>
+      </form>
 
-        <div>
-          <select
-            value={selectedService}
-            onChange={(e) => setSelectedService(e.target.value)}
-            className="w-full bg-surface-elevated border border-surface-border rounded px-3 py-2 text-text-secondary focus:outline-none focus:border-signal/60 font-mono text-xs"
-          >
-            <option value="ALL">Service: All Services</option>
-            <option value="auth-gateway">auth-gateway</option>
-            <option value="order-service">order-service</option>
-            <option value="payment-vault">payment-vault</option>
-            <option value="inventory-streamer">inventory-streamer</option>
-            <option value="notification-broker">notification-broker</option>
-          </select>
-        </div>
-
-        <div>
-          <select
-            value={selectedSeverity}
-            onChange={(e) => setSelectedSeverity(e.target.value)}
-            className="w-full bg-surface-elevated border border-surface-border rounded px-3 py-2 text-text-secondary focus:outline-none focus:border-signal/60 font-mono text-xs"
-          >
-            <option value="ALL">Severity: All</option>
-            <option value="SEV-1">SEV-1 (Outage)</option>
-            <option value="SEV-2">SEV-2 (Degradation)</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Memory Cards Grid */}
-      <div className="space-y-4">
-        {filteredMemories.length === 0 ? (
-          <EmptyState
-            title="No memory records found"
-            description="No historical incidents match your search query or filter criteria."
-            action={{
-              label: "Reset Search",
-              onClick: () => {
-                setSearchQuery("");
-                setSelectedService("ALL");
-                setSelectedSeverity("ALL");
-              },
-            }}
-          />
-        ) : (
-          filteredMemories.map((mem) => (
-            <motion.div key={mem.id} variants={fadeInVariants}>
-              <HindsightMemoryCard memory={mem} compact={false} />
-            </motion.div>
-          ))
-        )}
-      </div>
-
-      {/* Retain New Incident Modal with Motion AnimatePresence */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div
-              variants={backdropVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="fixed inset-0 bg-[#1a1c1c]/40 backdrop-blur-sm"
-              onClick={() => setIsModalOpen(false)}
-            />
-            <motion.div
-              variants={modalVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="relative z-10 bg-surface-elevated border border-surface-border rounded max-w-2xl w-full p-5 space-y-4 shadow-panel-elevated my-8"
-            >
-              <div className="flex items-center justify-between border-b border-surface-border pb-3">
-                <div className="flex items-center space-x-2 text-signal">
-                  <BrainCircuit className="w-5 h-5" />
-                  <h3 className="font-semibold text-sm text-text-primary">
-                    Retain Incident into Hindsight Memory Engine
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setIsModalOpen(false)}
-                  className="text-text-muted hover:text-text-primary"
-                  aria-label="Close dialog"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <form onSubmit={handleCreateMemory} className="space-y-3.5 text-xs font-mono">
-                <div>
-                  <label className="text-text-muted block mb-1">Incident Title *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Postgres Connection Pool Starvation via Long Locking Alter Table"
-                    value={newTitle}
-                    onChange={(e) => setNewTitle(e.target.value)}
-                    className="w-full bg-surface border border-surface-border p-2 rounded text-text-primary focus:outline-none focus:border-signal font-sans"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                  <div>
-                    <label className="text-text-muted block mb-1">Service *</label>
-                    <select
-                      value={newService}
-                      onChange={(e) => setNewService(e.target.value)}
-                      className="w-full bg-surface border border-surface-border p-2 rounded text-text-secondary"
-                    >
-                      <option value="auth-gateway">auth-gateway</option>
-                      <option value="order-service">order-service</option>
-                      <option value="payment-vault">payment-vault</option>
-                      <option value="inventory-streamer">inventory-streamer</option>
-                      <option value="notification-broker">notification-broker</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-text-muted block mb-1">Severity *</label>
-                    <select
-                      value={newSeverity}
-                      onChange={(e) => setNewSeverity(e.target.value as "SEV-1" | "SEV-2")}
-                      className="w-full bg-surface border border-surface-border p-2 rounded text-text-secondary"
-                    >
-                      <option value="SEV-1">SEV-1 (Outage)</option>
-                      <option value="SEV-2">SEV-2 (Degradation)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-text-muted block mb-1">Incident Ticket</label>
-                    <input
-                      type="text"
-                      value={newTicket}
-                      onChange={(e) => setNewTicket(e.target.value)}
-                      className="w-full bg-surface border border-surface-border p-2 rounded text-text-primary"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-text-muted block mb-1">Observed Symptoms (one per line)</label>
-                  <textarea
-                    rows={2}
-                    placeholder="Lock duration exceeded 120s&#10;Gateway 504 error spike&#10;Connection pool saturated"
-                    value={newSymptoms}
-                    onChange={(e) => setNewSymptoms(e.target.value)}
-                    className="w-full bg-surface border border-surface-border p-2 rounded text-text-primary font-sans"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-text-muted block mb-1">Root Cause Analysis *</label>
-                  <textarea
-                    rows={2}
-                    required
-                    placeholder="Detailed technical explanation of the catastrophic failure mechanism..."
-                    value={newRootCause}
-                    onChange={(e) => setNewRootCause(e.target.value)}
-                    className="w-full bg-surface border border-surface-border p-2 rounded text-text-primary font-sans"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-risk-warning block mb-1">
-                    Failed Approaches Tried During Incident (Do Not Repeat)
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="e.g. Tried increasing statement_timeout to 600s — made pool exhaustion worse."
-                    value={newFailedApproaches}
-                    onChange={(e) => setNewFailedApproaches(e.target.value)}
-                    className="w-full bg-surface border border-surface-border p-2 rounded text-text-primary font-sans"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-sage block mb-1">Permanent Verified Resolution *</label>
-                  <textarea
-                    rows={2}
-                    required
-                    placeholder="Exact steps, architecture changes, and runbook solution verified in production..."
-                    value={newResolution}
-                    onChange={(e) => setNewResolution(e.target.value)}
-                    className="w-full bg-surface border border-surface-border p-2 rounded text-text-primary font-sans"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-text-muted block mb-1">Post-Mortem Author Email</label>
-                  <input
-                    type="email"
-                    value={newAuthor}
-                    onChange={(e) => setNewAuthor(e.target.value)}
-                    className="w-full bg-surface border border-surface-border p-2 rounded text-text-primary"
-                  />
-                </div>
-
-                <div className="flex justify-end space-x-2 pt-3 border-t border-surface-border">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-3 py-1.5 rounded text-text-muted hover:text-text-primary border border-surface-border"
-                  >
-                    CANCEL
-                  </button>
-                  <motion.button
-                    whileHover={hoverSubtle}
-                    whileTap={tapSubtle}
-                    type="submit"
-                    className="px-4 py-1.5 rounded bg-signal text-canvas font-semibold flex items-center space-x-1"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>COMMIT TO HINDSIGHT</span>
-                  </motion.button>
-                </div>
-              </form>
-            </motion.div>
+      {error && (
+        <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+          <WifiOff className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-semibold">Hindsight recall unavailable</p>
+            <p className="mt-0.5 text-xs">{error}</p>
           </div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+        </div>
+      )}
+
+      {data && (
+        <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] text-text-muted">
+          <span className="inline-flex items-center gap-1.5">
+            <Database className="h-3 w-3" />
+            Bank <code className="font-mono text-text-secondary">{data.bankId}</code>
+          </span>
+          <span className="font-mono uppercase">{data.source.replaceAll("_", " ")}</span>
+        </div>
+      )}
+
+      {loading && !data ? (
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div key={index} className="h-36 animate-pulse rounded-xl border border-surface-border bg-surface-subtle" />
+          ))}
+        </div>
+      ) : data?.memories.length ? (
+        <div className="space-y-3">
+          {data.memories.map((memory, index) => {
+            const id = memory.id || memory.memoryId || `retrieved-${index}`;
+            const title =
+              metadataValue(memory.metadata, ["title", "incidentTitle", "name"]) ||
+              `Retrieved memory ${index + 1}`;
+            const score = scoreLabel(memory.scores?.final);
+            const semantic = scoreLabel(memory.scores?.semantic);
+
+            return (
+              <article key={id} className="rounded-xl border border-surface-border bg-surface p-4 shadow-panel-subtle">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="break-words text-sm font-bold text-text-primary">{title}</h2>
+                    <p className="mt-1 break-all font-mono text-[10px] text-text-muted">{id}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {score && (
+                      <span className="rounded-full border border-signal/20 bg-brand-subtle px-2.5 py-1 font-mono text-[10px] font-semibold text-signal">
+                        Relevance {score}
+                      </span>
+                    )}
+                    {semantic && (
+                      <span className="rounded-full border border-surface-border bg-surface-subtle px-2.5 py-1 font-mono text-[10px] text-text-secondary">
+                        Semantic {semantic}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <p className="mt-3 whitespace-pre-wrap break-words text-xs leading-relaxed text-text-secondary">
+                  {memoryBody(memory)}
+                </p>
+                {memory.context && memory.text && (
+                  <p className="mt-3 whitespace-pre-wrap break-words rounded-lg bg-surface-subtle p-3 text-xs leading-relaxed text-text-muted">
+                    {memory.context}
+                  </p>
+                )}
+                {memory.tags && memory.tags.length > 0 && (
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {memory.tags.map((tag) => (
+                      <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-surface-border bg-surface-subtle px-2 py-1 font-mono text-[10px] text-text-secondary">
+                        <Tag className="h-2.5 w-2.5" />
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div className="mt-3 flex items-center gap-1.5 border-t border-surface-border pt-3 text-[10px] text-text-muted">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Retrieved from the project bank · not independently re-verified by this screen
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      ) : data ? (
+        <div className="rounded-xl border border-surface-border bg-surface px-4 py-14 text-center shadow-panel-subtle">
+          <BrainCircuit className="mx-auto h-8 w-8 text-text-muted" />
+          <h2 className="mt-3 text-sm font-semibold text-text-primary">No matching memories</h2>
+          <p className="mt-1 text-xs text-text-muted">
+            Try a broader query or send verified deployment resolutions through the engineer-authorized retention workflow.
+          </p>
+        </div>
+      ) : !error ? (
+        <div className="rounded-xl border border-surface-border bg-surface p-8 text-center">
+          <AlertCircle className="mx-auto h-7 w-7 text-text-muted" />
+          <p className="mt-2 text-sm text-text-secondary">Waiting for Hindsight results.</p>
+        </div>
+      ) : null}
+    </div>
   );
 }
-
