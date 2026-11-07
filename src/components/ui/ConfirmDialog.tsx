@@ -54,7 +54,7 @@ export function ConfirmDialog({
             animate="visible"
             exit="exit"
             onClick={onCancel}
-            className="fixed inset-0 bg-black/60 backdrop-blur-[2px]"
+            className="fixed inset-0 bg-[#1a1c1c]/40 backdrop-blur-[2px]"
           />
           <motion.div
             variants={modalVariants}
