@@ -22,6 +22,8 @@ import {
 import { RiskBadge } from "@/components/ui/StatusBadge";
 import { HindsightMemoryCard } from "@/components/ui/HindsightMemoryCard";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
+import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
 import { useToast } from "@/components/ui/ToastProvider";
 import {
   fadeInVariants,
@@ -34,6 +36,7 @@ export default function LearningLabPage() {
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>("scenario-postgres-lock");
   const [engineMode, setEngineMode] = useState<"LIVE_MEMORY_ENGINE" | "FIXTURE">("LIVE_MEMORY_ENGINE");
   const { success, warning, info } = useToast();
+  const { setIsSimulatorModalOpen } = useDevOpsGuide();
 
   // Step state: 1: Cold, 2: Retention, 3: Warm
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -555,6 +558,18 @@ export default function LearningLabPage() {
             </motion.button>
           </div>
         }
+      />
+
+      <PlainEnglishCallout
+        title="Cold State vs Warm Memory (How the AI Learns)"
+        analogy="Imagine an intern on their first day of work (Cold State): they review a pull request and think 'looks fine to me!' because they don't know that exact SQL migration locked the database 3 months ago. A veteran senior engineer (Warm Memory) immediately stops the release and says 'Wait, we tried that in August and it caused 47 minutes of downtime!'"
+        explanation="The Learning Lab proves how ReleaseTrace evolves. In Step 1 (Cold State), no memory exists, so the risk assessment is naive. In Step 2, you retain a real postmortem into Hindsight. In Step 3 (Warm State), the exact same code is re-tested—and ReleaseTrace immediately intercepts the deployment with the exact past outage ticket."
+        whyItMatters="Without memory, every new team member or CI runner repeats past mistakes. With Hindsight memory, your release pipeline becomes progressively smarter with every release."
+        keyTerms={["Cold State Assessment", "Warm Precedent Recall", "Hindsight Vector Memory", "Failure Signature"]}
+        suggestedAction={{
+          label: "Try Quick Simulator",
+          onClick: () => setIsSimulatorModalOpen(true),
+        }}
       />
 
       {/* Scenario Selector */}

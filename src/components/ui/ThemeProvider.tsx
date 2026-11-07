@@ -2,7 +2,14 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-export type ThemeMode = "light" | "dark" | "warm-brown" | "cyber-teal" | "sunset-rose";
+export type ThemeMode =
+  | "minimal"
+  | "minimal-light"
+  | "dark"
+  | "light"
+  | "warm-brown"
+  | "cyber-teal"
+  | "sunset-rose";
 
 export interface ThemeOption {
   id: ThemeMode;
@@ -16,13 +23,22 @@ export interface ThemeOption {
 
 export const THEME_OPTIONS: ThemeOption[] = [
   {
-    id: "light",
-    name: "Pristine White",
+    id: "minimal",
+    name: "Minimal Studio",
+    category: "Dark",
+    bgPreview: "#09090b",
+    borderPreview: "#27272a",
+    accentPreview: "#38bdf8",
+    description: "Ultra-clean zinc monochrome with razor 1px borders & zero clutter",
+  },
+  {
+    id: "minimal-light",
+    name: "Minimal Paper",
     category: "Light",
     bgPreview: "#ffffff",
-    borderPreview: "#e2e8f0",
+    borderPreview: "#e4e4e7",
     accentPreview: "#0284c7",
-    description: "Crisp white canvas with subtle pastel glass refraction",
+    description: "Quiet crisp white canvas with subtle neutral borders & high contrast",
   },
   {
     id: "dark",
@@ -32,6 +48,15 @@ export const THEME_OPTIONS: ThemeOption[] = [
     borderPreview: "#1e293b",
     accentPreview: "#38bdf8",
     description: "Deep dark navy with electric cyan & specular rims",
+  },
+  {
+    id: "light",
+    name: "Pristine White",
+    category: "Light",
+    bgPreview: "#ffffff",
+    borderPreview: "#e2e8f0",
+    accentPreview: "#0284c7",
+    description: "Crisp white canvas with subtle pastel glass refraction",
   },
   {
     id: "warm-brown",
@@ -79,13 +104,15 @@ const ThemeContext = createContext<ThemeContextType>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>("light");
 
+  const isDarkTheme = (t: ThemeMode) => t !== "light" && t !== "minimal-light";
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem("releasetrace-theme") as ThemeMode | null;
       if (saved && THEME_OPTIONS.some((o) => o.id === saved)) {
         setThemeState(saved);
         document.documentElement.setAttribute("data-theme", saved);
-        document.documentElement.classList.toggle("dark", saved !== "light");
+        document.documentElement.classList.toggle("dark", isDarkTheme(saved));
       } else {
         document.documentElement.setAttribute("data-theme", "light");
         document.documentElement.classList.remove("dark");
@@ -98,17 +125,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem("releasetrace-theme", newTheme);
       document.documentElement.setAttribute("data-theme", newTheme);
-      document.documentElement.classList.toggle("dark", newTheme !== "light");
+      document.documentElement.classList.toggle("dark", isDarkTheme(newTheme));
     } catch {}
   };
 
-  const isDark = theme !== "light";
+  const isDark = isDarkTheme(theme);
 
   const toggleMode = () => {
     if (isDark) {
-      setTheme("light");
+      setTheme(theme === "minimal" ? "minimal-light" : "light");
     } else {
-      setTheme("dark");
+      setTheme(theme === "minimal-light" ? "minimal" : "dark");
     }
   };
 
@@ -122,4 +149,3 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 export function useTheme() {
   return useContext(ThemeContext);
 }
-
