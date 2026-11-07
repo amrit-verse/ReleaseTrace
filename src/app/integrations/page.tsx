@@ -15,6 +15,8 @@ import {
   Zap,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
+import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
 
 type ProviderStatus =
   | "CONNECTED"
@@ -72,6 +74,7 @@ function checkedAt(value?: string) {
 }
 
 export default function IntegrationsPage() {
+  const { setIsFlowModalOpen } = useDevOpsGuide();
   const [results, setResults] = useState<Record<string, HealthResult> | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,6 +130,18 @@ export default function IntegrationsPage() {
             {loading ? "Checking…" : "Run health checks"}
           </button>
         }
+      />
+
+      <PlainEnglishCallout
+        title="How the ReleaseTrace Cloud Ecosystem Connects"
+        analogy="Think of modern software engineering as an orchestra. The GitHub repository is the sheet music, Vercel is the concert hall, Neon PostgreSQL is the archive vault, Inngest is the stage coordinator, and Hindsight is the maestro who remembers every performance. ReleaseTrace connects them all together."
+        explanation="ReleaseTrace runs as a cloud-native intelligence agent. When code is pushed, GitHub triggers an Inngest background event. Inngest orchestrates risk rules, compares database schemas in Neon, recalls incident memories from Hindsight Cloud, and uses Groq's high-speed inference to generate human-readable safety reports."
+        whyItMatters="In distributed microservices, a failure in any integration breaks release safety. Real-time health probes verify that every external API, database pool, and LLM inference engine is online and responsive."
+        keyTerms={["Inngest Durable Workflows", "Neon Serverless Postgres", "Hindsight Vector Bank", "Groq LPU Inference"]}
+        suggestedAction={{
+          label: "View 5-stage pipeline diagram",
+          onClick: () => setIsFlowModalOpen(true),
+        }}
       />
 
       <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs leading-relaxed text-sky-900">

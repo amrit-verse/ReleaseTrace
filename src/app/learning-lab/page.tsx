@@ -23,6 +23,8 @@ import { RiskBadge } from "@/components/ui/StatusBadge";
 import { HindsightMemoryCard } from "@/components/ui/HindsightMemoryCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/ToastProvider";
+import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
+import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
 import {
   fadeInVariants,
   staggerContainer,
@@ -34,6 +36,7 @@ export default function LearningLabPage() {
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>("scenario-postgres-lock");
   const [engineMode, setEngineMode] = useState<"LIVE_MEMORY_ENGINE" | "FIXTURE">("LIVE_MEMORY_ENGINE");
   const { success, warning, info } = useToast();
+  const { setIsSimulatorModalOpen } = useDevOpsGuide();
 
   // Step state: 1: Cold, 2: Retention, 3: Warm
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -555,6 +558,18 @@ export default function LearningLabPage() {
             </motion.button>
           </div>
         }
+      />
+
+      <PlainEnglishCallout
+        title="Understanding the 3-Step Cold vs Warm Memory Experiment"
+        analogy="Imagine an experienced senior surgeon vs a novice medical student. The novice looks at standard test results and says 'everything looks normal' (Cold Run). But the senior surgeon remembers a rare patient last year who crashed under this exact dosage and stops the operation (Warm Run with Memory). ReleaseTrace brings this exact organizational memory to CI pipelines."
+        explanation="Standard CI checkers only verify syntax, static unit tests, and types. In Step 1 (Cold Run), the engine lacks memory of past outages, so subtle high-risk changes pass. In Step 2 (Retention), an engineer's verified post-mortem is retained into Hindsight vector memory. In Step 3 (Warm Run), the exact same release is re-evaluated, and Hindsight proactively intercepts the failure before it can take down production."
+        whyItMatters="Organizations repeat the same catastrophic infrastructure failures every 6-18 months because junior engineers don't know what happened before they joined. ReleaseTrace makes engineering incident memory persistent and proactive."
+        keyTerms={["Cold CI Run (Naive)", "Post-Mortem Retention", "Warm CI Run (Memory-Augmented)", "Catastrophic Prevention"]}
+        suggestedAction={{
+          label: "Open release simulator sandbox",
+          onClick: () => setIsSimulatorModalOpen(true),
+        }}
       />
 
       {/* Scenario Selector */}

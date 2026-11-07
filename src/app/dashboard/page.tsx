@@ -16,8 +16,11 @@ import {
   ShieldAlert,
   ShieldCheck,
   WifiOff,
+  Zap,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
+import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
 
 type Assessment = {
   overallCategory?: string | null;
@@ -131,6 +134,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { setIsSimulatorModalOpen } = useDevOpsGuide();
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
@@ -158,7 +162,6 @@ export default function DashboardPage() {
     void refresh();
   }, [refresh]);
 
-  const latest = stats?.latestDeployments?.[0];
   const databaseUnavailable = stats?.databaseStatus === "UNAVAILABLE";
   const hindsightUnavailable = stats?.hindsightStatus === "UNAVAILABLE";
   const dataLabel = !stats
@@ -183,16 +186,38 @@ export default function DashboardPage() {
             </span>
           }
         />
-        <button
-          type="button"
-          onClick={() => void refresh()}
-          disabled={loading || refreshing}
-          className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-lg border border-surface-border bg-surface px-3 py-2 text-xs font-semibold text-text-secondary shadow-panel-subtle transition hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-          Refresh data
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsSimulatorModalOpen(true)}
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-signal/40 bg-signal/10 px-3 py-2 text-xs font-semibold text-signal shadow-panel-subtle transition hover:bg-signal/20"
+          >
+            <Zap className="h-3.5 w-3.5" />
+            <span>Test Sandbox</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            disabled={loading || refreshing}
+            className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-lg border border-surface-border bg-surface px-3 py-2 text-xs font-semibold text-text-secondary shadow-panel-subtle transition hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh data
+          </button>
+        </div>
       </div>
+
+      <PlainEnglishCallout
+        title="What is ReleaseTrace and why does it exist?"
+        analogy="Think of ReleaseTrace like an automated airport flight safety checker for your code before it deploys to live users. Instead of hoping a database change doesn't crash your servers at 3 AM, ReleaseTrace inspects past incidents and database locks in seconds."
+        explanation="Every time a pull request is created or code is pushed, ReleaseTrace extracts Git diffs, inspects Prisma schema migrations for exclusive table locks, compares staging vs production configuration, and queries Vectorize Hindsight memory to see if this pattern has ever crashed production before."
+        whyItMatters="Catching a database deadlock or connection pool starvation in CI costs $0. Fixing it after production goes down costs hours of downtime, customer loss, and emergency stress."
+        keyTerms={["Pre-Flight CI Gate", "Prisma Migration & Schema Lock", "Connection Pool Saturation", "Hindsight Memory Bank"]}
+        suggestedAction={{
+          label: "Test a simulated release",
+          onClick: () => setIsSimulatorModalOpen(true),
+        }}
+      />
 
       {error && (
         <div role="status" className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">

@@ -12,6 +12,8 @@ import {
   WifiOff,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
+import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
 
 type RecallMemory = {
   id?: string;
@@ -59,6 +61,7 @@ function scoreLabel(value?: number) {
 }
 
 export default function MemoryExplorerPage() {
+  const { openGlossary } = useDevOpsGuide();
   const [searchInput, setSearchInput] = useState("");
   const [query, setQuery] = useState("");
   const [data, setData] = useState<MemoryResponse | null>(null);
@@ -127,31 +130,67 @@ export default function MemoryExplorerPage() {
         }
       />
 
+      <PlainEnglishCallout
+        title="Why Engineering Post-Mortems Belong in Vector Memory"
+        analogy="Think of a team's Slack or Notion wiki as an attic full of old boxes. When an outage happens, someone wrote a post-mortem document, but 6 months later nobody searches for it before deploying. Vector memory is like having an archivist who reads every single pull request diff and automatically hands you the exact post-mortem box before you push to prod."
+        explanation="ReleaseTrace integrates with Hindsight Cloud. Each engineering incident, root cause, and verified mitigation is embedded into multi-dimensional vector space. When a new pull request touches database tables, queries, or configuration, Hindsight computes semantic similarity to retrieve relevant historical precedents instantly."
+        whyItMatters="Most high-severity outages aren't brand-new bugs; they are repeats of past mistakes under slightly different commit messages. Persistent memory turns past pain into permanent institutional immunity."
+        keyTerms={["Vector Embeddings", "Semantic Recall", "Root Cause & Mitigation", "Provenance & Signoff"]}
+        suggestedAction={{
+          label: "Learn vector memory in glossary",
+          onClick: () => openGlossary("vector-memory"),
+        }}
+      />
+
       <div className={`rounded-lg border p-3 text-xs leading-relaxed ${isMock ? "border-amber-200 bg-amber-50 text-amber-900" : "border-sky-200 bg-sky-50 text-sky-900"}`}>
         {isMock
           ? "Hindsight is running in mock transport mode. These results are not evidence of persistence in Hindsight Cloud."
           : "Recall is served by the configured Hindsight provider. Similarity scores rank retrieval relevance; an engineer must still verify incident facts before retention."}
       </div>
 
-      <form onSubmit={handleSearch} className="flex flex-col gap-2 rounded-xl border border-surface-border bg-surface p-3 shadow-panel-subtle sm:flex-row">
-        <label className="relative min-w-0 flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-          <input
-            value={searchInput}
-            onChange={(event) => setSearchInput(event.target.value)}
-            placeholder="Search incidents, symptoms, migrations, database failures…"
-            className="min-h-11 w-full rounded-lg border border-surface-border bg-surface-subtle pl-9 pr-3 text-xs text-text-primary outline-none transition placeholder:text-text-muted focus:border-signal"
-          />
-        </label>
-        <button
-          type="submit"
-          disabled={loading}
-          className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-signal px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
-        >
-          <BrainCircuit className="h-3.5 w-3.5" />
-          Recall memories
-        </button>
-      </form>
+      <div className="space-y-3">
+        <form onSubmit={handleSearch} className="flex flex-col gap-2 rounded-xl border border-surface-border bg-surface p-3 shadow-panel-subtle sm:flex-row">
+          <label className="relative min-w-0 flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+            <input
+              value={searchInput}
+              onChange={(event) => setSearchInput(event.target.value)}
+              placeholder="Search incidents, symptoms, migrations, database failures…"
+              className="min-h-11 w-full rounded-lg border border-surface-border bg-surface-subtle pl-9 pr-3 text-xs text-text-primary outline-none transition placeholder:text-text-muted focus:border-signal"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={loading}
+            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-signal px-4 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+          >
+            <BrainCircuit className="h-3.5 w-3.5" />
+            Recall memories
+          </button>
+        </form>
+
+        <div className="flex flex-wrap items-center gap-1.5 px-1 text-xs">
+          <span className="font-mono text-[11px] text-text-muted">Student quick searches:</span>
+          {[
+            "Postgres table lock timeout",
+            "Connection pool saturation",
+            "Unindexed foreign key migration",
+            "Prisma ALTER TABLE exclusive lock",
+          ].map((sample) => (
+            <button
+              key={sample}
+              type="button"
+              onClick={() => {
+                setSearchInput(sample);
+                setQuery(sample);
+              }}
+              className="rounded-full border border-surface-border bg-surface px-2.5 py-1 font-mono text-[11px] text-text-secondary transition hover:border-signal/50 hover:bg-brand-subtle hover:text-signal"
+            >
+              {sample}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {error && (
         <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">

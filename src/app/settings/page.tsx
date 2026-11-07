@@ -12,6 +12,8 @@ import { mockDefaultSettings } from "@/data/mockData";
 import { WorkspaceSettings } from "@/types";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { useToast } from "@/components/ui/ToastProvider";
+import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
+import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
 import {
   fadeInVariants,
   staggerContainer,
@@ -20,6 +22,7 @@ import {
 } from "@/lib/motion";
 
 export default function SettingsPage() {
+  const { setIsGlossaryModalOpen } = useDevOpsGuide();
   const [settings, setSettings] = useState<WorkspaceSettings>(mockDefaultSettings);
   const { info } = useToast();
 
@@ -62,6 +65,18 @@ export default function SettingsPage() {
             <span>Export Config JSON</span>
           </motion.button>
         }
+      />
+
+      <PlainEnglishCallout
+        title="How DevOps Risk Policies Protect Teams"
+        analogy="Think of release policies like the autopilot altitude alarms and maximum wind limits in modern aviation. If crosswinds exceed 40 knots, autopilot disengages and mandates manual captain sign-off. Risk policies prevent rogue or accidental deployments when automated risk exceeds your team's comfort limit."
+        explanation="Engineering teams configure risk tolerance thresholds (e.g. 70/100). If a PR introduces an unindexed migration or an untested critical path, the score crosses the threshold. ReleaseTrace automatically converts the release from 'Autopilot' to 'Human Verification Required' and notifies Slack and PagerDuty."
+        whyItMatters="Without explicit gating policies, teams rely on hope. Explicit policies make safety objective, auditable, and repeatable across every microservice and developer."
+        keyTerms={["Risk Tolerance Threshold", "Mandatory Lead Signoff", "Incident Blast Radius", "Audit Export"]}
+        suggestedAction={{
+          label: "Browse DevOps terms glossary",
+          onClick: () => setIsGlossaryModalOpen(true),
+        }}
       />
 
       <div className="space-y-6">

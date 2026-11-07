@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDown,
@@ -11,6 +12,8 @@ import {
   WifiOff,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
+import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
 
 type DeploymentRow = {
   id: string;
@@ -79,6 +82,7 @@ function StatusPill({ value, risk = false }: { value: string; risk?: boolean }) 
 }
 
 export default function DeploymentsHistoryPage() {
+  const { setIsSimulatorModalOpen } = useDevOpsGuide();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState("ALL");
   const [environment, setEnvironment] = useState("ALL");
@@ -155,6 +159,18 @@ export default function DeploymentsHistoryPage() {
             Refresh
           </button>
         }
+      />
+
+      <PlainEnglishCallout
+        title="The Deployment Register Explained"
+        analogy="Think of this page as an airport flight log or a hospital admission ledger. Every single time code attempts to fly to staging or production, an immutable audit trail entry is recorded here with its safety verdict."
+        explanation="Release events are received via GitHub Actions webhooks and Vercel deployment webhooks. Each entry captures the exact Git commit SHA, author, branch, target environment (preview, staging, or production), and the AI Pre-Flight Gate risk verdict."
+        whyItMatters="In professional DevOps, traceability is everything. If an outage occurs, the deployment register instantly tells the team: What changed? Who deployed it? Did CI flag any warnings? And what was the blast radius?"
+        keyTerms={["Immutable Audit Trail", "Git Commit SHA", "Staging vs Production", "Pre-Flight Gate Decision"]}
+        suggestedAction={{
+          label: "Simulate a release event",
+          onClick: () => setIsSimulatorModalOpen(true),
+        }}
       />
 
       <section className="rounded-xl border border-surface-border bg-surface p-3 shadow-panel-subtle">
@@ -253,18 +269,24 @@ export default function DeploymentsHistoryPage() {
                     </p>
                   )}
                 </div>
-                {deployment.url ? (
-                  <a
-                    href={deployment.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-surface-border px-3 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-subtle hover:text-signal"
+                <div className="flex flex-wrap items-center gap-2">
+                  <Link
+                    href={`/deployments/${deployment.id}`}
+                    className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-surface-border bg-surface px-3 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-subtle hover:text-signal"
                   >
-                    Open deployment <ExternalLink className="h-3.5 w-3.5" />
-                  </a>
-                ) : (
-                  <span className="text-[10px] font-mono uppercase text-text-muted">No deployment URL</span>
-                )}
+                    View report
+                  </Link>
+                  {deployment.url ? (
+                    <a
+                      href={deployment.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-surface-border bg-surface px-3 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-subtle hover:text-signal"
+                    >
+                      Provider <ExternalLink className="h-3 w-3" />
+                    </a>
+                  ) : null}
+                </div>
               </article>
             ))}
           </div>

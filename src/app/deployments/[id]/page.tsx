@@ -27,6 +27,8 @@ import { HindsightMemoryCard } from "@/components/ui/HindsightMemoryCard";
 import { VerificationChecklist } from "@/components/ui/VerificationChecklist";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useToast } from "@/components/ui/ToastProvider";
+import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
+import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
 import {
   fadeInVariants,
   hoverSubtle,
@@ -37,6 +39,7 @@ export default function DeploymentDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const { success, warning, info } = useToast();
+  const { setIsFlowModalOpen } = useDevOpsGuide();
 
   const deployment = mockDeployments.find((d) => d.id === id) || mockDeployments[0];
 
@@ -84,6 +87,18 @@ export default function DeploymentDetailPage() {
         <span>/</span>
         <span className="text-text-primary">{deployment.service}</span>
       </nav>
+
+      <PlainEnglishCallout
+        title="Understanding a Pre-Flight Assessment Report"
+        analogy="Think of this as an automated airport pre-flight safety inspection. Before a plane takes off, mechanics inspect the engines, verify fuel balance, check past incident records for that aircraft model, and sign off on a pre-flight checklist. ReleaseTrace does this for your code and database."
+        explanation="When a pull request triggers CI, ReleaseTrace parses the Git diff, Prisma migrations, and environment variables. It compares configuration parity between preview and production, recalls matching historical post-mortems from Vectorize Hindsight, and runs deterministic safety rules to assign a risk index (0 to 100)."
+        whyItMatters="Without pre-flight intelligence, teams discover database deadlocks, connection pool starvation, and missing indexes in production when customers complain. This report gives engineers the exact reasons and actionable remediation steps before merging."
+        keyTerms={["Risk Score (0-100)", "Deterministic Safety Rules", "Environment Parity Gap", "Actionable Pre-Flight Gates"]}
+        suggestedAction={{
+          label: "View 5-stage pipeline flow",
+          onClick: () => setIsFlowModalOpen(true),
+        }}
+      />
 
       {/* Main Header Card */}
       <div className="bg-surface border border-surface-border rounded p-5 space-y-4 shadow-panel">
