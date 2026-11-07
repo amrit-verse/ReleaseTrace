@@ -1434,3 +1434,61 @@ html:not([data-theme="light"]):not(:not([data-theme])) button.bg-white {
   outline: 2px solid #0284c7;
   outline-offset: 2px;
 }
+
+/* =============================================================
+   LIQUID GLASS SPECULAR SHIMMER & SKELETON LOADERS
+   ============================================================= */
+
+@keyframes specular-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.liquid-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(226, 232, 240, 0.45) 0%,
+    rgba(255, 255, 255, 0.85) 50%,
+    rgba(226, 232, 240, 0.45) 100%
+  );
+  background-size: 200% 100%;
+  animation: specular-shimmer 1.5s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  border-radius: 0.75rem;
+}
+
+html[data-theme="dark"] .liquid-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(30, 41, 59, 0.4) 0%,
+    rgba(51, 65, 85, 0.7) 50%,
+    rgba(30, 41, 59, 0.4) 100%
+  );
+  background-size: 200% 100%;
+}
+
+html[data-theme="minimal"] .liquid-skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(39, 39, 42, 0.4) 0%,
+    rgba(63, 63, 70, 0.7) 50%,
+    rgba(39, 39, 42, 0.4) 100%
+  );
+  background-size: 200% 100%;
+}
+
+/* Tactile micro-interactions */
+.interactive-hover-lift {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+.interactive-hover-lift:hover {
+  transform: translateY(-2px);
+}
+.interactive-hover-lift:active {
+  transform: translateY(0px) scale(0.99);
+}
+

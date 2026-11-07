@@ -106,36 +106,44 @@ export default function DashboardPage() {
 
         {/* Quick Action Pill Group */}
         <div className="flex items-center gap-2.5 mt-1 overflow-x-auto no-scrollbar pb-1">
-          <Link
-            href="/learning-lab"
-            className="flex items-center gap-2 px-4 py-2 rounded-full btn-catchy-primary active:scale-95 transition-all flex-shrink-0"
-          >
-            <span className="material-symbols-outlined text-[17px] text-amber-300">auto_awesome</span>
-            <span className="text-[12px] font-bold text-white">Interactive Learning Lab</span>
-          </Link>
-          <Link
-            href="/deployments"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full liquid-glass-pill text-slate-700 hover:text-slate-900 active:scale-95 transition-all flex-shrink-0"
-          >
-            <span className="material-symbols-outlined text-[16px] text-slate-600">rocket_launch</span>
-            <span className="text-[12px] font-semibold">Deployment Register</span>
-            <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
-          </Link>
-          <Link
-            href="/memories"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full liquid-glass-pill text-slate-700 hover:text-slate-900 active:scale-95 transition-all flex-shrink-0"
-          >
-            <span className="material-symbols-outlined text-[16px] text-primary">psychology</span>
-            <span className="text-[12px] font-semibold">Memory Bank</span>
-          </Link>
-          <button
-            type="button"
-            onClick={() => setIsSimulatorModalOpen(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full liquid-glass-pill text-sky-600 hover:text-sky-800 border border-sky-300 active:scale-95 transition-all flex-shrink-0"
-          >
-            <span className="material-symbols-outlined text-[16px]">bolt</span>
-            <span className="text-[12px] font-semibold">Test Sandbox</span>
-          </button>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+            <Link
+              href="/learning-lab"
+              className="flex items-center gap-2 px-4 py-2 rounded-full btn-catchy-primary transition-all flex-shrink-0 shadow-sm"
+            >
+              <span className="material-symbols-outlined text-[17px] text-amber-300">auto_awesome</span>
+              <span className="text-[12px] font-bold text-white">Interactive Learning Lab</span>
+            </Link>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+            <Link
+              href="/deployments"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full liquid-glass-pill text-slate-700 hover:text-slate-900 transition-all flex-shrink-0"
+            >
+              <span className="material-symbols-outlined text-[16px] text-slate-600">rocket_launch</span>
+              <span className="text-[12px] font-semibold">Deployment Register</span>
+              <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+            </Link>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+            <Link
+              href="/memories"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full liquid-glass-pill text-slate-700 hover:text-slate-900 transition-all flex-shrink-0"
+            >
+              <span className="material-symbols-outlined text-[16px] text-primary">psychology</span>
+              <span className="text-[12px] font-semibold">Memory Bank</span>
+            </Link>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+            <button
+              type="button"
+              onClick={() => setIsSimulatorModalOpen(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full liquid-glass-pill text-sky-600 hover:text-sky-800 border border-sky-300 transition-all flex-shrink-0"
+            >
+              <span className="material-symbols-outlined text-[16px]">bolt</span>
+              <span className="text-[12px] font-semibold">Test Sandbox</span>
+            </button>
+          </motion.div>
         </div>
       </section>
 
@@ -144,7 +152,8 @@ export default function DashboardPage() {
         {/* Stat 1: Active Runs */}
         <motion.div
           variants={fadeInVariants}
-          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card shadow-sm"
+          whileHover={{ y: -3, transition: { duration: 0.16 } }}
+          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card shadow-sm cursor-default"
         >
           <div className="flex items-center justify-between text-slate-500">
             <span className="font-mono text-[10px] font-bold uppercase tracking-wider">Active Runs</span>
@@ -166,7 +175,8 @@ export default function DashboardPage() {
         {/* Stat 2: Interceptions */}
         <motion.div
           variants={fadeInVariants}
-          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card border-rose-300/80 bg-rose-50/40 shadow-sm"
+          whileHover={{ y: -3, transition: { duration: 0.16 } }}
+          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card border-rose-300/80 bg-rose-50/40 shadow-sm cursor-default"
         >
           <div className="flex items-center justify-between text-rose-700">
             <span className="font-mono text-[10px] font-bold uppercase tracking-wider">Interceptions</span>
@@ -188,7 +198,8 @@ export default function DashboardPage() {
         {/* Stat 3: Retained Memories */}
         <motion.div
           variants={fadeInVariants}
-          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card shadow-sm"
+          whileHover={{ y: -3, transition: { duration: 0.16 } }}
+          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card shadow-sm cursor-default"
         >
           <div className="flex items-center justify-between text-slate-500">
             <span className="font-mono text-[10px] font-bold uppercase tracking-wider">Retained Memories</span>
@@ -210,7 +221,8 @@ export default function DashboardPage() {
         {/* Stat 4: Rule Enforcement */}
         <motion.div
           variants={fadeInVariants}
-          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card shadow-sm"
+          whileHover={{ y: -3, transition: { duration: 0.16 } }}
+          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card shadow-sm cursor-default"
         >
           <div className="flex items-center justify-between text-slate-500">
             <span className="font-mono text-[10px] font-bold uppercase tracking-wider">Rule Enforcement</span>
@@ -275,13 +287,15 @@ export default function DashboardPage() {
               <span className="font-mono text-[11px] text-slate-500 font-medium">/ 100</span>
             </div>
           </div>
-          <Link
-            href="/deployments/dep-prod-9402"
-            className="flex items-center justify-center gap-1.5 px-5 h-10 rounded-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 active:scale-95 text-white font-bold text-[12px] transition-all shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/35 hover:-translate-y-0.5"
-          >
-            <span>Inspect Assessment</span>
-            <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
-          </Link>
+          <motion.div whileHover={{ scale: 1.02, x: 2 }} whileTap={{ scale: 0.97 }}>
+            <Link
+              href="/deployments/dep-prod-9402"
+              className="flex items-center justify-center gap-1.5 px-5 h-10 rounded-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold text-[12px] transition-all shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/35"
+            >
+              <span>Inspect Assessment</span>
+              <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+            </Link>
+          </motion.div>
         </div>
 
         {/* Nested Diagnostics Accordion Blocks (Liquid Glass Subtiles) */}
