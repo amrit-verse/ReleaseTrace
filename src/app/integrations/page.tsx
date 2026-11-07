@@ -1,312 +1,211 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  Layers,
-  BrainCircuit,
-  GitBranch,
-  Server,
   Activity,
-  Bell,
-  MessageSquare,
-  RotateCcw,
+  AlertCircle,
+  BrainCircuit,
+  CheckCircle2,
+  Clock3,
+  Database,
+  Github,
+  RefreshCw,
+  Server,
+  Workflow,
   Zap,
-  X,
 } from "lucide-react";
-import { mockIntegrations } from "@/data/mockData";
-import { IntegrationConfig } from "@/types";
 import { PageHeader } from "@/components/ui/PageHeader";
-import { useToast } from "@/components/ui/ToastProvider";
-import {
-  fadeInVariants,
-  staggerContainer,
-  modalVariants,
-  backdropVariants,
-  hoverSubtle,
-  tapSubtle,
-} from "@/lib/motion";
+
+type ProviderStatus =
+  | "CONNECTED"
+  | "NOT_CONFIGURED"
+  | "UNAVAILABLE"
+  | "AUTHENTICATION_FAILED"
+  | "MOCK_MODE"
+  | "CONFIGURED";
+
+type HealthResult = {
+  status: ProviderStatus;
+  latencyMs: number;
+  lastHeartbeat: string;
+  error?: string;
+};
+
+type HealthResponse = {
+  results: Record<string, HealthResult>;
+};
+
+const providers = [
+  { id: "hindsight", name: "Hindsight Cloud", description: "Persistent engineering memory and incident recall.", icon: BrainCircuit },
+  { id: "groq", name: "Groq", description: "Grounded language-model explanations and recommendations.", icon: Zap },
+  { id: "neon", name: "Neon PostgreSQL", description: "Deployment, assessment and resolution persistence.", icon: Database },
+  { id: "vercel", name: "Vercel", description: "Deployment platform API authentication.", icon: Activity },
+  { id: "inngest", name: "Inngest", description: "Durable background processing and event workflows.", icon: Workflow },
+  { id: "github", name: "GitHub", description: "CI event ingress and repository API connectivity.", icon: Github },
+] as const;
+
+function statusPresentation(status?: ProviderStatus) {
+  switch (status) {
+    case "CONNECTED":
+      return { label: "Connected", className: "border-emerald-200 bg-emerald-50 text-emerald-800", icon: CheckCircle2 };
+    case "CONFIGURED":
+      return { label: "Configured · not probed", className: "border-sky-200 bg-sky-50 text-sky-800", icon: Clock3 };
+    case "MOCK_MODE":
+      return { label: "Mock transport", className: "border-amber-200 bg-amber-50 text-amber-800", icon: AlertCircle };
+    case "AUTHENTICATION_FAILED":
+      return { label: "Authentication failed", className: "border-red-200 bg-red-50 text-red-800", icon: AlertCircle };
+    case "UNAVAILABLE":
+      return { label: "Unavailable", className: "border-red-200 bg-red-50 text-red-800", icon: AlertCircle };
+    case "NOT_CONFIGURED":
+      return { label: "Not configured", className: "border-surface-border bg-surface-subtle text-text-secondary", icon: Clock3 };
+    default:
+      return { label: "Not checked", className: "border-surface-border bg-surface-subtle text-text-muted", icon: Clock3 };
+  }
+}
+
+function checkedAt(value?: string) {
+  if (!value) return "Not checked";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Time unavailable"
+    : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
 
 export default function IntegrationsPage() {
-  const [integrations, setIntegrations] = useState<IntegrationConfig[]>(mockIntegrations);
-  const [selectedIntegration, setSelectedIntegration] = useState<IntegrationConfig | null>(null);
-  const [isTesting, setIsTesting] = useState<string | null>(null);
-  const { success, info } = useToast();
+  const [results, setResults] = useState<Record<string, HealthResult> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
 
-  const testConnection = (id: string) => {
-    setIsTesting(id);
-    setTimeout(() => {
-      setIsTesting(null);
-      setIntegrations((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                status: "CONNECTED",
-                lastHeartbeat: "Just now (verified)",
-                latencyMs: item.latencyMs > 0 ? item.latencyMs : 24,
-              }
-            : item
-        )
-      );
-      success("Health Probe Passed", "200 OK across verified integration endpoint.");
-    }, 600);
-  };
-
-  const getProviderIcon = (provider: IntegrationConfig["provider"]) => {
-    switch (provider) {
-      case "hindsight":
-        return BrainCircuit;
-      case "github":
-      case "gitlab":
-        return GitBranch;
-      case "argocd":
-      case "kubernetes":
-        return Server;
-      case "datadog":
-        return Activity;
-      case "pagerduty":
-        return Bell;
-      case "slack":
-        return MessageSquare;
-      default:
-        return Layers;
+  const runHealthChecks = useCallback(async (signal?: AbortSignal) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/integrations/health", {
+        cache: "no-store",
+        signal,
+      });
+      const payload = (await response.json()) as HealthResponse & { error?: string };
+      if (!response.ok) {
+        throw new Error(payload.error || `Health checks failed (HTTP ${response.status})`);
+      }
+      setResults(payload.results || {});
+      setLastUpdated(new Date().toISOString());
+    } catch (cause) {
+      if (cause instanceof Error && cause.name === "AbortError") return;
+      setError(cause instanceof Error ? cause.message : "Could not retrieve integration health.");
+      setResults(null);
+    } finally {
+      if (!signal?.aborted) setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void runHealthChecks(controller.signal);
+    return () => controller.abort();
+  }, [runHealthChecks]);
 
   return (
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      animate="visible"
-      className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto w-full font-sans"
-    >
-      {/* Header */}
+    <div className="mx-auto w-full max-w-7xl space-y-6 p-4 lg:p-6">
       <PageHeader
-        title="Engineering Integrations"
-        subtitle="Vercel deployments, Neon PostgreSQL, GitHub Actions, Vectorize Hindsight Cloud, and Inngest durable workflows."
+        title="Integration health"
+        subtitle="Live connectivity checks for the services used by the ReleaseTrace runtime. Credentials are never returned to this page."
         badge={
-          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-surface-elevated text-signal border border-surface-border">
-            {integrations.length} CONFIGURED
+          <span className="rounded-full border border-surface-border bg-surface px-2.5 py-1 font-mono text-[10px] font-semibold uppercase text-text-secondary">
+            {results ? Object.keys(results).length + " checks" : "Health diagnostics"}
           </span>
         }
         actions={
-          <motion.button
-            whileHover={hoverSubtle}
-            whileTap={tapSubtle}
-            onClick={() => {
-              integrations.forEach((i) => testConnection(i.id));
-              info("Probing All Integrations", "Dispatched ping requests to all connected endpoints.");
-            }}
-            className="px-3 py-1.5 rounded bg-surface-elevated hover:bg-surface-elevated/80 text-text-secondary hover:text-text-primary border border-surface-border font-mono text-xs flex items-center space-x-1.5 transition-colors"
+          <button
+            type="button"
+            onClick={() => void runHealthChecks()}
+            disabled={loading}
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-surface-border bg-surface px-3 py-2 text-xs font-semibold text-text-secondary shadow-panel-subtle transition hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <RotateCcw className="w-3.5 h-3.5 text-text-muted" />
-            <span>Probe All Heartbeats</span>
-          </motion.button>
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`} />
+            {loading ? "Checking…" : "Run health checks"}
+          </button>
         }
       />
 
-      {/* Integrations Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {integrations.map((item) => {
-          const Icon = getProviderIcon(item.provider);
-          const isHindsight = item.provider === "hindsight";
-          const testingThis = isTesting === item.id;
+      <div className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-xs leading-relaxed text-sky-900">
+        These results come from server-side provider probes. “Configured” means credentials or integration keys are present, but the health endpoint did not perform a live connectivity check for that provider.
+      </div>
+
+      {error && (
+        <div role="alert" className="flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-900">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-semibold">Health checks could not be completed</p>
+            <p className="mt-0.5 text-xs">{error}</p>
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {providers.map((provider) => {
+          const Icon = provider.icon;
+          const result = results?.[provider.id];
+          const presentation = statusPresentation(result?.status);
+          const StatusIcon = presentation.icon;
 
           return (
-            <motion.div
-              key={item.id}
-              variants={fadeInVariants}
-              className={`bg-surface border rounded p-4 space-y-3 flex flex-col justify-between transition-colors shadow-panel ${
-                isHindsight
-                  ? "border-signal/50 bg-surface-elevated/30"
-                  : "border-surface-border hover:border-surface-border/80"
-              }`}
+            <section
+              key={provider.id}
+              className="flex min-h-52 flex-col justify-between rounded-xl border border-surface-border bg-surface p-4 shadow-panel-subtle"
             >
-              <div className="space-y-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-2.5">
-                    <div
-                      className={`w-8 h-8 rounded flex items-center justify-center ${
-                        isHindsight
-                          ? "bg-signal/15 text-signal border border-signal/30"
-                          : "bg-surface-elevated text-text-primary border border-surface-border"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-semibold text-text-primary">
-                        {item.name}
-                      </h3>
-                      <span className="text-[10px] font-mono text-text-muted">
-                        {item.category}
-                      </span>
-                    </div>
-                  </div>
-
-                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-1 bg-sage/15 text-sage border-sage/40">
-                    <span className="w-1.5 h-1.5 rounded-full bg-sage animate-pulse" />
-                    <span>{item.status}</span>
-                  </span>
-                </div>
-
-                <p className="text-[11px] text-text-secondary font-sans leading-relaxed">
-                  {item.description}
-                </p>
-
-                <div className="space-y-1 font-mono text-[11px] text-text-secondary bg-surface-elevated p-2.5 rounded border border-surface-border">
-                  <div className="flex justify-between">
-                    <span className="text-text-muted">Endpoint:</span>
-                    <span className="truncate max-w-[180px] text-text-primary" title={item.endpoint}>
-                      {item.endpoint}
+              <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-subtle text-signal">
+                      <Icon className="h-5 w-5" />
                     </span>
+                    <div>
+                      <h2 className="text-sm font-bold text-text-primary">{provider.name}</h2>
+                      <p className="mt-0.5 text-[10px] font-mono uppercase tracking-wide text-text-muted">{provider.id}</p>
+                    </div>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-text-muted">Latency:</span>
-                    <span className="text-sage">{item.latencyMs}ms</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-text-muted">Events Synced:</span>
-                    <span className="text-text-primary">{item.syncedEventsCount.toLocaleString()}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-text-muted">Heartbeat:</span>
-                    <span className="text-text-secondary">{item.lastHeartbeat}</span>
-                  </div>
-                </div>
-
-                {/* Capabilities list */}
-                <div className="space-y-1">
-                  <span className="text-[10px] font-mono uppercase text-text-muted block">
-                    Active Capabilities:
+                  <span className={`inline-flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[10px] font-semibold ${presentation.className}`}>
+                    <StatusIcon className="h-3 w-3" />
+                    {presentation.label}
                   </span>
-                  <div className="flex flex-wrap gap-1">
-                    {item.enabledCapabilities.map((cap, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-surface-elevated text-text-secondary border border-surface-border"
-                      >
-                        {cap}
-                      </span>
-                    ))}
-                  </div>
                 </div>
+                <p className="mt-4 text-xs leading-relaxed text-text-secondary">{provider.description}</p>
               </div>
 
-              {/* Actions */}
-              <div className="pt-3 border-t border-surface-border flex items-center justify-between font-mono text-xs">
-                <motion.button
-                  whileHover={hoverSubtle}
-                  whileTap={tapSubtle}
-                  onClick={() => testConnection(item.id)}
-                  disabled={testingThis}
-                  className="px-2.5 py-1 rounded bg-surface-elevated hover:bg-surface-elevated/80 text-text-primary text-[11px] border border-surface-border flex items-center space-x-1"
-                >
-                  <Zap className={`w-3 h-3 ${testingThis ? "animate-spin text-signal" : "text-text-muted"}`} />
-                  <span>{testingThis ? "PROBING..." : "TEST PING"}</span>
-                </motion.button>
-
-                <motion.button
-                  whileHover={hoverSubtle}
-                  whileTap={tapSubtle}
-                  onClick={() => setSelectedIntegration(item)}
-                  className="px-2.5 py-1 rounded bg-surface-elevated hover:bg-surface-elevated/80 text-text-secondary hover:text-text-primary text-[11px] border border-surface-border"
-                >
-                  CONFIGURE
-                </motion.button>
+              <div className="mt-5 space-y-2 border-t border-surface-border pt-3">
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="text-text-muted">Probe latency</span>
+                  <span className="font-mono font-semibold text-text-primary">
+                    {result && result.latencyMs > 0 ? `${result.latencyMs} ms` : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="text-text-muted">Last checked</span>
+                  <span className="text-right font-mono text-[10px] text-text-secondary">
+                    {checkedAt(result?.lastHeartbeat)}
+                  </span>
+                </div>
+                {result?.error && (
+                  <p className="break-words rounded-md bg-red-50 px-2 py-1.5 text-[10px] leading-relaxed text-red-800">
+                    {result.error}
+                  </p>
+                )}
+                {!result && loading && (
+                  <div className="h-1.5 animate-pulse rounded-full bg-surface-subtle" />
+                )}
               </div>
-            </motion.div>
+            </section>
           );
         })}
       </div>
 
-      {/* Configuration Modal with Motion AnimatePresence */}
-      <AnimatePresence>
-        {selectedIntegration && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div
-              variants={backdropVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="fixed inset-0 bg-[#1a1c1c]/40 backdrop-blur-sm"
-              onClick={() => setSelectedIntegration(null)}
-            />
-            <motion.div
-              variants={modalVariants}
-              initial="hidden"
-              animate="visible"
-              exit="exit"
-              className="relative z-10 bg-surface-elevated border border-surface-border rounded max-w-lg w-full p-5 space-y-4 shadow-panel-elevated"
-            >
-              <div className="flex items-center justify-between border-b border-surface-border pb-3">
-                <h3 className="font-semibold text-sm text-text-primary flex items-center gap-2">
-                  <span>Configure {selectedIntegration.name}</span>
-                </h3>
-                <button
-                  onClick={() => setSelectedIntegration(null)}
-                  className="text-text-muted hover:text-text-primary"
-                  aria-label="Close dialog"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="space-y-3 font-mono text-xs">
-                <div>
-                  <label className="text-text-muted block mb-1">Service Endpoint URL:</label>
-                  <input
-                    type="text"
-                    defaultValue={selectedIntegration.endpoint}
-                    className="w-full bg-surface border border-surface-border p-2 rounded text-text-primary focus:outline-none focus:border-signal font-mono text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-text-muted block mb-1">API Key / Auth Token (Masked):</label>
-                  <input
-                    type="text"
-                    defaultValue={selectedIntegration.credentialsMasked}
-                    className="w-full bg-surface border border-surface-border p-2 rounded text-text-primary focus:outline-none focus:border-signal font-mono text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-text-muted block mb-1">Sync Interval (Seconds):</label>
-                  <input
-                    type="number"
-                    defaultValue={selectedIntegration.syncIntervalSec}
-                    className="w-full bg-surface border border-surface-border p-2 rounded text-text-primary focus:outline-none focus:border-signal font-mono text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end space-x-2 pt-2 border-t border-surface-border font-mono text-xs">
-                <button
-                  onClick={() => setSelectedIntegration(null)}
-                  className="px-3 py-1.5 rounded text-text-muted hover:text-text-primary border border-surface-border"
-                >
-                  CANCEL
-                </button>
-                <motion.button
-                  whileHover={hoverSubtle}
-                  whileTap={tapSubtle}
-                  onClick={() => {
-                    const name = selectedIntegration.name;
-                    setSelectedIntegration(null);
-                    success("Configuration Saved", `Updated credentials and interval for ${name}.`);
-                  }}
-                  className="px-4 py-1.5 rounded bg-signal text-canvas font-semibold"
-                >
-                  SAVE CHANGES
-                </motion.button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-    </motion.div>
+      <p className="flex items-center gap-2 text-[10px] text-text-muted" aria-live="polite">
+        <Server className="h-3 w-3" />
+        {lastUpdated ? `Last health request: ${checkedAt(lastUpdated)}` : "Waiting for health results"}
+        {loading ? " · Running provider checks" : ""}
+      </p>
+    </div>
   );
 }
-
