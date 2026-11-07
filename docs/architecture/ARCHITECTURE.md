@@ -196,7 +196,7 @@ Relevant files:
 | Page / surface | Main source or behavior |
 |---|---|
 | **Dashboard** | Fetches live aggregate counts, latest deployment records, database status, Hindsight status, and registered deterministic rule count from `/api/dashboard/stats`. |
-| **Deployments** | Reads the project-scoped, paginated deployment register from `/api/deployments`. |
+| **Deployments** | Reads the project-scoped, paginated deployment register from `/api/deployments`; a selected record is loaded from `/api/deployments/[id]` and displays persisted evidence, assessment, memory references, and resolution in a read-only detail view. |
 | **Memory Explorer** | Reads Hindsight through `GET /api/memories`; writes are protected by bearer authorization or isolated explicit demo mode. |
 | **Integrations** | Uses the integration-health API to probe configured dependencies. |
 | **Learning Lab** | Provides curated learning/rehearsal scenarios; it is a learning surface, not a substitute for a production deployment event. |
@@ -210,6 +210,7 @@ Relevant files:
 - `src/app/api/dashboard/stats/route.ts`
 - `src/app/deployments/page.tsx`
 - `src/app/api/deployments/route.ts`
+- `src/app/api/deployments/[id]/route.ts`
 - `src/app/memories/page.tsx`
 - `src/app/api/memories/route.ts`
 - `src/app/integrations/page.tsx`
@@ -243,7 +244,7 @@ src/
 │   ├── api/
 │   │   ├── assess/                 # Direct assessment endpoint
 │   │   ├── dashboard/stats/        # Live dashboard metrics
-│   │   ├── deployments/            # Deployment register API
+│   │   ├── deployments/            # Register + project-scoped detail APIs
 │   │   ├── inngest/                # Inngest serving endpoint
 │   │   ├── integrations/health/    # Integration probes
 │   │   ├── memories/               # Hindsight recall + verified retention API
