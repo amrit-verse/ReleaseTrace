@@ -46,10 +46,9 @@ type DashboardStats = {
   totalDeployments: number;
   activeAssessments: number;
   criticalBlockedCount: number;
-  verifiedPrecedentsCount: number;
+  memoryDocumentCount: number;
   deterministicRuleCount: number;
   latestDeployments: DeploymentRow[];
-  isMock: boolean;
   databaseStatus: "CONNECTED" | "UNAVAILABLE";
   hindsightStatus: "CONNECTED" | "MOCK_MODE" | "UNAVAILABLE";
 };
@@ -165,10 +164,12 @@ export default function DashboardPage() {
   const dataLabel = !stats
     ? "Awaiting data"
     : databaseUnavailable
-      ? "Database unavailable"
-      : stats.isMock
-        ? "Fixture / mock data"
-        : "Live project data";
+      ? "Neon unavailable"
+      : stats.hindsightStatus === "MOCK_MODE"
+        ? "Neon live · Hindsight mock"
+        : hindsightUnavailable
+          ? "Neon live · Hindsight unavailable"
+          : "Cloud data";
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 p-4 lg:p-6">
@@ -234,7 +235,7 @@ export default function DashboardPage() {
             />
             <MetricCard
               title="Memory documents"
-              value={stats.verifiedPrecedentsCount}
+              value={stats.memoryDocumentCount}
               detail="Documents indexed in this project bank"
               icon={BrainCircuit}
               tone="text-emerald-700"
@@ -364,7 +365,7 @@ export default function DashboardPage() {
       {stats && (
         <p className="flex items-center gap-2 text-[10px] text-text-muted" aria-live="polite">
           <Clock3 className="h-3 w-3" />
-          Project {stats.projectId} · {stats.isMock ? "Mock transport" : "Live transport"} · Refresh to fetch the latest values
+          Project {stats.projectId} · Neon {label(stats.databaseStatus)} · Hindsight {label(stats.hindsightStatus)}
         </p>
       )}
     </div>
