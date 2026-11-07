@@ -33,24 +33,91 @@ export default function IntegrationsPage() {
   const [isTesting, setIsTesting] = useState<string | null>(null);
   const { success, info } = useToast();
 
-  const testConnection = (id: string) => {
-    setIsTesting(id);
-    setTimeout(() => {
-      setIsTesting(null);
-      setIntegrations((prev) =>
-        prev.map((item) =>
-          item.id === id
-            ? {
-                ...item,
-                status: "CONNECTED",
-                lastHeartbeat: "Just now (verified)",
-                latencyMs: item.latencyMs > 0 ? item.latencyMs : 24,
+  React.useEffect(() => {
+    async function loadLiveHealth() {
+      try {
+        const res = await fetch("/api/integrations/health");
+        if (res.ok) {
+          const healthData = await res.json();
+          setIntegrations((prev) =>
+            prev.map((item) => {
+              const live = healthData[item.id] || healthData[item.provider];
+              if (live) {
+                return {
+                  ...item,
+                  status: live.status,
+                  latencyMs: live.latencyMs,
+                  lastHeartbeat: live.lastHeartbeat ? "Live Heartbeat" : item.lastHeartbeat,
+                };
               }
-            : item
-        )
-      );
-      success("Health Probe Passed", "200 OK across verified integration endpoint.");
-    }, 600);
+              return item;
+            })
+          );
+        }
+      } catch {}
+    }
+    void loadLiveHealth();
+  }, []);
+
+  const testConnection = async (id: string) => {
+    setIsTesting(id);
+    try {
+      const res = await fetch(`/api/integrations/health?id=${id}`);
+      if (res.ok) {
+        const data = await res.json();
+        const live = data[id];
+        if (live) {
+          setIntegrations((prev) =>
+            prev.map((item) =>
+              item.id === id
+                ? {
+                    ...item,
+                    status: live.status,
+                    latencyMs: live.latencyMs,
+                    lastHeartbeat: "Just now (verified)",
+                  }
+                : item
+            )
+          );
+          if (live.status === "CONNECTED") {
+            success("Health Probe Passed", `${id.toUpperCase()} 200 OK (${live.latencyMs}ms).`);
+          } else if (live.status === "MOCK_MODE") {
+            info("Fixture Mode", `${id.toUpperCase()} operating in deterministic rehearsal mode.`);
+          } else {
+            info("Probe Result", `${id.toUpperCase()} status: ${live.status}${live.error ? ` (${live.error})` : ""}`);
+          }
+        }
+      }
+    } catch {
+      info("Probe Request", `Attempted ping to ${id}.`);
+    } finally {
+      setIsTesting(null);
+    }
+  };
+
+  const probeAll = async () => {
+    info("Probing All Integrations", "Dispatched ping requests to all connected endpoints.");
+    try {
+      const res = await fetch("/api/integrations/health");
+      if (res.ok) {
+        const healthData = await res.json();
+        setIntegrations((prev) =>
+          prev.map((item) => {
+            const live = healthData[item.id] || healthData[item.provider];
+            if (live) {
+              return {
+                ...item,
+                status: live.status,
+                latencyMs: live.latencyMs,
+                lastHeartbeat: "Just now (verified)",
+              };
+            }
+            return item;
+          })
+        );
+        success("Probe Sweep Completed", "All active integration heartbeats updated.");
+      }
+    } catch {}
   };
 
   const getProviderIcon = (provider: IntegrationConfig["provider"]) => {
@@ -74,6 +141,21 @@ export default function IntegrationsPage() {
     }
   };
 
+  const getStatusBadgeStyle = (status: string) => {
+    switch (status) {
+      case "CONNECTED":
+        return "bg-sage/15 text-sage border-sage/40";
+      case "MOCK_MODE":
+      case "CONFIGURED":
+        return "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/40";
+      case "AUTHENTICATION_FAILED":
+      case "UNAVAILABLE":
+        return "bg-red-500/15 text-red-600 dark:text-red-400 border-red-500/40";
+      default:
+        return "bg-surface-elevated text-text-muted border-surface-border";
+    }
+  };
+
   return (
     <motion.div
       variants={staggerContainer}
@@ -94,10 +176,7 @@ export default function IntegrationsPage() {
           <motion.button
             whileHover={hoverSubtle}
             whileTap={tapSubtle}
-            onClick={() => {
-              integrations.forEach((i) => testConnection(i.id));
-              info("Probing All Integrations", "Dispatched ping requests to all connected endpoints.");
-            }}
+            onClick={probeAll}
             className="px-4 py-2 rounded-full liquid-glass-pill text-text-secondary hover:text-text-primary font-mono text-xs flex items-center space-x-1.5 transition-all shadow-sm active:scale-95"
           >
             <RotateCcw className="w-3.5 h-3.5 text-text-muted" />
@@ -119,7 +198,7 @@ export default function IntegrationsPage() {
               variants={fadeInVariants}
               className={`liquid-glass-card rounded-2xl p-5 space-y-3 flex flex-col justify-between transition-all shadow-sm hover:shadow-md ${
                 isHindsight
-                  ? "border-sky-300 ring-1 ring-sky-300/30"
+                  ? "border-signal/50 ring-1 ring-signal/30"
                   : ""
               }`}
             >
@@ -145,8 +224,8 @@ export default function IntegrationsPage() {
                     </div>
                   </div>
 
-                  <span className="font-mono text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-1 bg-sage/15 text-sage border-sage/40">
-                    <span className="w-1.5 h-1.5 rounded-full bg-sage animate-pulse" />
+                  <span className={`font-mono text-[10px] px-2 py-0.5 rounded border flex items-center gap-1.5 ${getStatusBadgeStyle(item.status)}`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${item.status === "CONNECTED" ? "bg-sage animate-pulse" : item.status === "MOCK_MODE" ? "bg-amber-500" : "bg-red-500"}`} />
                     <span>{item.status}</span>
                   </span>
                 </div>

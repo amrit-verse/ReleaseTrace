@@ -244,7 +244,16 @@ export interface IntegrationConfig {
     | "slack";
   category: "MEMORY_ENGINE" | "CI_CD" | "INFRASTRUCTURE" | "MONITORING" | "ALERTING";
   description: string;
-  status: "CONNECTED" | "DEGRADED" | "DISCONNECTED" | "SYNCING";
+  status:
+    | "CONNECTED"
+    | "DEGRADED"
+    | "DISCONNECTED"
+    | "SYNCING"
+    | "MOCK_MODE"
+    | "CONFIGURED"
+    | "UNAVAILABLE"
+    | "AUTHENTICATION_FAILED"
+    | "NOT_CONFIGURED";
   endpoint: string;
   lastHeartbeat: string;
   latencyMs: number;

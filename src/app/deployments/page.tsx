@@ -58,20 +58,20 @@ function StatusPill({ value, risk = false }: { value: string; risk?: boolean }) 
   const normalized = value.toUpperCase();
   const style = risk
     ? normalized === "CRITICAL"
-      ? "border-red-200 bg-red-50 text-red-800"
+      ? "border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-400"
       : normalized === "HIGH_RISK" || normalized === "HIGH"
-        ? "border-amber-200 bg-amber-50 text-amber-800"
+        ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-400"
         : normalized === "ELEVATED"
-          ? "border-orange-200 bg-orange-50 text-orange-800"
+          ? "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-400"
           : normalized === "VERIFIED" || normalized === "NOMINAL"
-            ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+            ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-400"
             : "border-surface-border bg-surface-subtle text-text-secondary"
     : normalized === "SUCCEEDED" || normalized === "READY" || normalized === "PASSED"
-      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-400"
       : normalized === "FAILED" || normalized === "ERROR" || normalized === "BLOCKED"
-        ? "border-red-200 bg-red-50 text-red-800"
+        ? "border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-400"
         : normalized === "CANCELED" || normalized === "ROLLED_BACK"
-          ? "border-amber-200 bg-amber-50 text-amber-800"
+          ? "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-400"
           : "border-surface-border bg-surface-subtle text-text-secondary";
 
   return (

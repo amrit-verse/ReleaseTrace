@@ -74,15 +74,15 @@ function label(value?: string | null) {
 function riskStyle(value?: string | null) {
   switch ((value || "").toUpperCase()) {
     case "CRITICAL":
-      return "border-red-200 bg-red-50 text-red-800";
+      return "border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/15 dark:text-red-400";
     case "HIGH":
     case "HIGH_RISK":
-      return "border-amber-200 bg-amber-50 text-amber-800";
+      return "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/15 dark:text-amber-400";
     case "ELEVATED":
-      return "border-orange-200 bg-orange-50 text-orange-800";
+      return "border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-500/30 dark:bg-orange-500/15 dark:text-orange-400";
     case "NOMINAL":
     case "VERIFIED":
-      return "border-emerald-200 bg-emerald-50 text-emerald-800";
+      return "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/15 dark:text-emerald-400";
     default:
       return "border-surface-border bg-surface-subtle text-text-secondary";
   }

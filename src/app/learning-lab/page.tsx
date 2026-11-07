@@ -569,17 +569,17 @@ export default function LearningLabPage() {
               onClick={() => handleScenarioChange(scen.id)}
               className={`p-4 rounded-2xl text-left transition-all ${
                 isSelected
-                  ? "liquid-glass-card border-slate-900 shadow-md text-slate-900 ring-2 ring-slate-900/10"
-                  : "liquid-glass-card text-slate-600 hover:text-slate-900 shadow-sm hover:shadow-md"
+                  ? "liquid-glass-card border-signal shadow-md text-text-primary ring-2 ring-signal/20"
+                  : "liquid-glass-card text-text-secondary hover:text-text-primary shadow-sm hover:shadow-md"
               }`}
             >
               <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-xs text-slate-900">{scen.service}</span>
-                <span className="text-[10px] text-slate-500 font-mono">
+                <span className="font-semibold text-xs text-text-primary">{scen.service}</span>
+                <span className="text-[10px] text-text-muted font-mono">
                   {scen.commitHash.substring(0, 8)}
                 </span>
               </div>
-              <p className="text-[11px] text-slate-600 font-sans line-clamp-2">
+              <p className="text-[11px] text-text-secondary font-sans line-clamp-2">
                 {scen.title}
               </p>
             </motion.button>
