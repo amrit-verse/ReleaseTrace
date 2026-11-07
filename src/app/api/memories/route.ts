@@ -170,6 +170,16 @@ export async function POST(request: Request) {
     const retentionWorkflow = engine.getRetentionWorkflow();
     const retentionResult = await retentionWorkflow.retainVerifiedExperience(memoryInput);
 
+    if (!retentionResult.success) {
+      return NextResponse.json(
+        {
+          error: "Retention Failed: Live Hindsight rejected or failed to index memory",
+          details: "Hindsight retention did not report success",
+        },
+        { status: 502 }
+      );
+    }
+
     const adapter = engine.getHindsightAdapter();
     const isMock = adapter.isMock();
     const retentionStatus = isMock ? "MOCK_RETAINED" : "LIVE_RETAINED";

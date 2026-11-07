@@ -159,7 +159,10 @@ export class ReleaseTraceIntelligenceEngine {
       if (r.source === 'VERIFIED_MEMORY' && qualifiedMemories.length > 0) {
         const topMem = qualifiedMemories[0].memory;
         return {
-          ...r,
+          action: r.action,
+          priority: r.priority,
+          rationale: r.rationale,
+          source: r.source,
           memoryReference: {
             memoryId: topMem.id,
             confirmedBy: topMem.confirmation.confirmedBy,
@@ -171,7 +174,19 @@ export class ReleaseTraceIntelligenceEngine {
             : undefined,
         };
       }
-      return r;
+      return {
+        action: r.action,
+        priority: r.priority,
+        rationale: r.rationale,
+        source: r.source,
+        memoryReference: r.memoryReference ? {
+          memoryId: r.memoryReference.memoryId,
+          confirmedBy: r.memoryReference.confirmedBy,
+          confirmedAt: r.memoryReference.confirmedAt,
+        } : undefined,
+        conditionNotice: r.conditionNotice ?? undefined,
+        divergenceWarning: r.divergenceWarning ?? undefined,
+      };
     });
 
     // If hard blocked by deterministic rules, prepend immediate halt recommendation

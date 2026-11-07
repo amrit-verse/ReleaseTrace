@@ -182,7 +182,7 @@ export function signPayload(payload, secret, timestamp = new Date().toISOString(
   const payloadStr = typeof payload === "string" ? payload : JSON.stringify(payload);
   const signature = crypto
     .createHmac("sha256", secret)
-    .update(`${timestamp}.${payloadStr}`, "utf8")
+    .update(payloadStr, "utf8")
     .digest("hex");
 
   return {

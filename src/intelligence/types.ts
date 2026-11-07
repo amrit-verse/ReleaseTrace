@@ -203,6 +203,8 @@ export interface ReleaseAssessment {
     hindsightBankId: string;
     memoryEngineVersion: string;
     memoryCountConsulted: number;
+    durationMs?: number;
+    isFallbackUsed?: boolean;
     timestamp: string;
   };
 }

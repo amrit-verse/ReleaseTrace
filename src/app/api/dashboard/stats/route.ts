@@ -60,12 +60,8 @@ export async function GET(request: Request) {
       verifiedPrecedentsCount = adapter.getBankMemoriesCount(bankId);
     } else {
       try {
-        const bankProfile = await adapter.getRawClient().getBankProfile(bankId);
-        verifiedPrecedentsCount =
-          (bankProfile as unknown as { document_count?: number; items_count?: number })
-            ?.document_count ??
-          (bankProfile as unknown as { items_count?: number })?.items_count ??
-          0;
+        const docs = await adapter.getRawClient().listDocuments(bankId);
+        verifiedPrecedentsCount = (docs as any)?.total ?? (docs as any)?.items?.length ?? 0;
       } catch {
         verifiedPrecedentsCount = 0;
       }

@@ -107,7 +107,8 @@ export function verifySignature(options: VerifySignatureOptions): { valid: boole
 export function verifyHmacSha256(
   rawBody: string | Buffer,
   signatureHeader: string | null | undefined,
-  secret: string
+  secret: string,
+  timestampHeader?: string | null
 ): SignatureVerificationResult {
   if (!signatureHeader || signatureHeader.trim().length === 0) {
     return { isValid: false, valid: false, reason: "Missing signature header (X-ReleaseTrace-Signature)" };
@@ -123,9 +124,15 @@ export function verifyHmacSha256(
     hmac.update(rawBuffer);
     const expectedSignature = hmac.digest("hex");
 
-    const cleanSignature = signatureHeader.startsWith("sha256=")
-      ? signatureHeader.slice(7).trim()
-      : signatureHeader.trim();
+    let cleanSignature = signatureHeader.trim();
+    if (cleanSignature.startsWith("sha256=")) {
+      cleanSignature = cleanSignature.slice(7).trim();
+    } else if (cleanSignature.includes("v1=")) {
+      const match = cleanSignature.match(/v1=([a-f0-9]+)/i);
+      if (match) {
+        cleanSignature = match[1];
+      }
+    }
 
     if (cleanSignature.length !== expectedSignature.length) {
       return { isValid: false, valid: false, reason: "Signature length mismatch" };
@@ -134,7 +141,15 @@ export function verifyHmacSha256(
     const expectedBuffer = Buffer.from(expectedSignature, "hex");
     const receivedBuffer = Buffer.from(cleanSignature, "hex");
 
-    const matches = crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+    let matches = crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+    if (!matches && timestampHeader) {
+      const tsBuffer = Buffer.from(`${timestampHeader}.${rawBuffer.toString("utf8")}`, "utf8");
+      const tsHmac = crypto.createHmac("sha256", secret);
+      tsHmac.update(tsBuffer);
+      const tsExpected = tsHmac.digest("hex");
+      matches = crypto.timingSafeEqual(Buffer.from(tsExpected, "hex"), receivedBuffer);
+    }
+
     if (!matches) {
       return { isValid: false, valid: false, reason: "Signature mismatch" };
     }

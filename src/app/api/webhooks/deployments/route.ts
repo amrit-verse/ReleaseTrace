@@ -7,9 +7,17 @@ import prisma from "@/lib/db/client";
 
 export async function POST(request: NextRequest) {
   const secret =
+    process.env.RELEASETRACE_WEBHOOK_SECRET ||
     process.env.RELESETRACE_WEBHOOK_SECRET ||
     process.env.WEBHOOK_SECRET ||
-    "development-webhook-secret-key-32-chars-min";
+    (process.env.NODE_ENV !== "production" ? "development-webhook-secret-key-32-chars-min" : undefined);
+
+  if (!secret) {
+    return NextResponse.json(
+      { error: "Configuration Error: RELEASETRACE_WEBHOOK_SECRET is not configured on server" },
+      { status: 500 }
+    );
+  }
 
   // 1. Read raw body text for timing-safe HMAC validation
   let rawBody: string;
@@ -30,7 +38,7 @@ export async function POST(request: NextRequest) {
 
   // Enforce strict HMAC verification when signature header is present or in production
   if (process.env.NODE_ENV === "production" || signatureHeader) {
-    const sigCheck = verifyHmacSha256(rawBody, signatureHeader, secret);
+    const sigCheck = verifyHmacSha256(rawBody, signatureHeader, secret, timestampHeader);
     if (!sigCheck.isValid) {
       return NextResponse.json(
         { error: "Unauthorized: Invalid or missing webhook signature", reason: sigCheck.reason },
@@ -126,7 +134,7 @@ export async function POST(request: NextRequest) {
 
   // 7. Enqueue Inngest background event
   try {
-    await inngest.send({
+    const sendResult = await inngest.send({
       name: "releasetrace/deployment.received",
       data: {
         event: {
@@ -141,23 +149,34 @@ export async function POST(request: NextRequest) {
         correlatedVercelId: vercelId,
       },
     });
-  } catch (err) {
-    console.warn("Inngest event dispatch skipped or dev server offline:", err);
-  }
 
-  // 8. Return 202 Accepted
-  return NextResponse.json(
-    {
-      accepted: true,
-      deduplicated: false,
-      eventId: deploymentEvent.eventId,
-      provider: deploymentEvent.provider,
-      commitSha: deploymentEvent.evidence.commitSha,
-      vercelCorrelated: Boolean(vercelUrl),
-      vercelUrl: vercelUrl || null,
-      status: "queued_for_assessment",
-      receivedAt: new Date().toISOString(),
-    },
-    { status: 202 }
-  );
+    // 8. Return 202 Accepted with dispatched Inngest event ID
+    return NextResponse.json(
+      {
+        accepted: true,
+        deduplicated: false,
+        eventId: deploymentEvent.eventId,
+        provider: deploymentEvent.provider,
+        commitSha: deploymentEvent.evidence.commitSha,
+        vercelCorrelated: Boolean(vercelUrl),
+        vercelUrl: vercelUrl || null,
+        status: "queued_for_assessment",
+        inngestEventIds: sendResult?.ids || [],
+        receivedAt: new Date().toISOString(),
+      },
+      { status: 202 }
+    );
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error("Inngest event dispatch failed:", err);
+    return NextResponse.json(
+      {
+        accepted: false,
+        error: "Background Execution Error: Failed to dispatch deployment event to Inngest",
+        details: errorMessage,
+        eventId: deploymentEvent.eventId,
+      },
+      { status: 502 }
+    );
+  }
 }

@@ -39,6 +39,13 @@ export class HistoricalRecallWorkflow {
   ): Promise<RecalledExperienceItem[]> {
     const bankId = this.bankManager.getProjectBankId(deployment.projectId);
 
+    // Ensure project bank is safely initialized before initial recall
+    try {
+      await this.bankManager.ensureProjectBank(deployment.projectId);
+    } catch (bankErr) {
+      console.warn(`[HistoricalRecall] Ensure project bank warning for ${bankId}:`, bankErr);
+    }
+
     // Build rich, multi-faceted natural language query
     const queryParts: string[] = [
       `Deployment failure in service "${deployment.service}"`,
@@ -97,7 +104,9 @@ export class HistoricalRecallWorkflow {
         if (memory) {
           const score = typeof item.scores?.final === 'number'
             ? item.scores.final
-            : (typeof item.scores?.semantic === 'number' ? item.scores.semantic : 0.7);
+            : (typeof item.scores?.semantic === 'number'
+                ? item.scores.semantic
+                : (typeof item.scores?.keyword === 'number' ? item.scores.keyword : 0.0));
 
           recalledItems.push({
             memory,

@@ -32,9 +32,9 @@ export const AssessmentRecommendationSchema = z.object({
     memoryId: z.string(),
     confirmedBy: z.string(),
     confirmedAt: z.string(),
-  }).optional(),
-  conditionNotice: z.string().optional(),
-  divergenceWarning: z.string().optional(),
+  }).nullable().optional(),
+  conditionNotice: z.string().nullable().optional(),
+  divergenceWarning: z.string().nullable().optional(),
 });
 
 export const LlmAssessmentOutputSchema = z.object({
@@ -46,9 +46,9 @@ export const LlmAssessmentOutputSchema = z.object({
     'ABSTAINED_NO_RELEVANT_MEMORIES',
     'ABSTAINED_WEAK_RECALL',
   ]),
-  abstentionReason: z.string().optional(),
+  abstentionReason: z.string().nullable().optional(),
   recalledMemoriesUsed: z.array(RecalledMemoryCitationSchema).default([]),
-  environmentMismatchAnalysis: z.string().optional(),
+  environmentMismatchAnalysis: z.string().nullable().optional(),
   contradictionsIdentified: z.array(ContradictionReportSchema).default([]),
   currentEvidenceObservations: z.array(z.string()).default([]),
   recommendations: z.array(AssessmentRecommendationSchema).min(1),

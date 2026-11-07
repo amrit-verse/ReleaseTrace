@@ -34,7 +34,7 @@ export class GroqAdapter {
 
   constructor(config: GroqAdapterConfig = {}) {
     const apiKey = config.apiKey || process.env.GROQ_API_KEY;
-    this.model = config.model || process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    this.model = config.model || process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
     this.temperature = config.temperature ?? 0.0;
     this.maxTokens = config.maxTokens ?? 3500;
     this.isMockMode = config.useMockTransport ?? (!apiKey || process.env.GROQ_USE_MOCK === 'true');
