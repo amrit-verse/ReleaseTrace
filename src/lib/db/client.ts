@@ -1,10 +1,8 @@
-import { Pool } from "@neondatabase/serverless";
 import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "@prisma/client";
 
 declare global {
   // Prevent multiple client instances in development hot-reloading
-  // eslint-disable-next-line no-var
   var __prismaClient: PrismaClient | undefined;
 }
 
@@ -17,8 +15,7 @@ export function createPrismaClient(): PrismaClient {
   }
 
   // Pooled connection for runtime operations via Neon serverless adapter
-  const pool = new Pool({ connectionString: databaseUrl });
-  const adapter = new PrismaNeon(pool);
+  const adapter = new PrismaNeon({ connectionString: databaseUrl });
 
   return new PrismaClient({
     adapter,

@@ -57,6 +57,7 @@ export interface DeploymentContext {
   environment: EnvironmentConfig;
   targetEnvironment: 'production' | 'staging' | 'canary';
   telemetrySnapshot?: TelemetrySnapshot;
+  environmentNotes?: string;
 }
 
 export interface FailureIncident {
@@ -202,6 +203,8 @@ export interface ReleaseAssessment {
     hindsightBankId: string;
     memoryEngineVersion: string;
     memoryCountConsulted: number;
+    durationMs?: number;
+    isFallbackUsed?: boolean;
     timestamp: string;
   };
 }
