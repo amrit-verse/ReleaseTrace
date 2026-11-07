@@ -17,6 +17,7 @@ export type AgentIntent =
   | "EXPLAIN_ABSTENTION"
   | "EXPLAIN_INTEGRATIONS"
   | "CODE_REVIEW_HELP"
+  | "GIT_CONTRIBUTION"
   | "GENERAL_QUERY";
 
 export interface IntentMatch {
