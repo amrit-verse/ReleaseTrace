@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   ArrowDown,
   ArrowUp,
-  ArrowUpDown,
   ExternalLink,
   GitCommit,
   RefreshCw,
