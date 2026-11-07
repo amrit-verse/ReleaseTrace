@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 export const dynamic = "force-dynamic";
 
 function boundedInteger(value: string | null, fallback: number, min: number, max: number) {
+  if (value === null || value.trim() === "") return fallback;
   const parsed = Number(value);
   if (!Number.isInteger(parsed)) return fallback;
   return Math.min(max, Math.max(min, parsed));
@@ -11,7 +12,9 @@ function boundedInteger(value: string | null, fallback: number, min: number, max
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const projectId = searchParams.get("projectId") || process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
+  // This MVP uses one server-configured project until project membership authorization exists.
+  // Never let an unauthenticated query parameter select another tenant/project.
+  const projectId = process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
   const page = boundedInteger(searchParams.get("page"), 1, 1, 1_000_000);
   const pageSize = boundedInteger(searchParams.get("pageSize"), 20, 1, 100);
   const status = searchParams.get("status");
