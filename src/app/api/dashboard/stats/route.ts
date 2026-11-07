@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const canonicalProjectId = process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
-  const projectId = searchParams.get("projectId") || canonicalProjectId;
+  const projectId = canonicalProjectId;
 
   let totalDeployments = 0;
   let activeAssessments = 0;
@@ -43,14 +43,15 @@ export async function GET(request: Request) {
   const bankManager = new ProjectMemoryBankManager(adapter);
   const bankId = bankManager.getProjectBankId(projectId);
 
-  let verifiedPrecedentsCount = 0;
+  let memoryDocumentCount = 0;
   let hindsightStatus: "CONNECTED" | "MOCK_MODE" | "UNAVAILABLE" =
     adapter.isMock() ? "MOCK_MODE" : "CONNECTED";
 
   if (!adapter.isMock()) {
     try {
-      const docs = await adapter.getRawClient().listDocuments(bankId);
-      verifiedPrecedentsCount = docs.total ?? docs.items?.length ?? 0;
+      const result = await adapter.getRawClient().listDocuments(bankId);
+      const docs = result as unknown as { total?: number; items?: unknown[] };
+      memoryDocumentCount = docs.total ?? docs.items?.length ?? 0;
     } catch (error) {
       hindsightStatus = "UNAVAILABLE";
       console.error("[dashboard/stats] Hindsight query failed:", error);
@@ -65,10 +66,9 @@ export async function GET(request: Request) {
     totalDeployments,
     activeAssessments,
     criticalBlockedCount,
-    verifiedPrecedentsCount,
+    memoryDocumentCount,
     deterministicRuleCount: RISK_RULE_REGISTRY.length,
     latestDeployments,
-    isMock: adapter.isMock(),
     databaseStatus,
     hindsightStatus,
   });
