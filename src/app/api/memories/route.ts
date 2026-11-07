@@ -9,12 +9,8 @@ import {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const canonicalProjectId = process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
-    const projectId =
-      searchParams.get("projectId") ||
-      searchParams.get("service") ||
-      canonicalProjectId;
-    const query = searchParams.get("q") || "deployment failure migration incident";
+    const projectId = process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
+    const query = (searchParams.get("q") || "deployment failure migration incident").trim().slice(0, 240);
 
     const engine = new ReleaseTraceIntelligenceEngine();
     const bankManager = engine.getBankManager();
