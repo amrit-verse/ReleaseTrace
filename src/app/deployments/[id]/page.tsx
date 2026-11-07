@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
@@ -38,10 +38,17 @@ import {
 export default function DeploymentDetailPage() {
   const params = useParams();
   const id = params?.id as string;
+  const sampleDeployment = mockDeployments.find((item) => item.id === id);
+
+  // Keep the known sample report as an explicit demo route. Real IDs must load real records.
+  return sampleDeployment
+    ? <MockDeploymentDetailPage deployment={sampleDeployment} />
+    : <LiveDeploymentDetail id={id} />;
+}
+
+function MockDeploymentDetailPage({ deployment }: { deployment: (typeof mockDeployments)[number] }) {
   const { success, warning, info } = useToast();
   const { setIsFlowModalOpen } = useDevOpsGuide();
-
-  const deployment = mockDeployments.find((d) => d.id === id) || mockDeployments[0];
 
   const [activeTab, setActiveTab] = useState<"overview" | "evidence" | "environment" | "memories" | "actions">("overview");
   const [pipelineState, setPipelineState] = useState(deployment.status);
@@ -442,3 +449,172 @@ export default function DeploymentDetailPage() {
   );
 }
 
+
+
+type LiveDeploymentRecord = {
+  id: string; provider: string; providerDeploymentId: string; commitSha: string;
+  branch: string; environment: string; status: string; url: string | null;
+  startedAt: string; completedAt: string | null; createdAt: string; evidence: unknown;
+  project: { name: string; repository: string };
+  assessment: null | {
+    overallCategory: string; summary: string; groundedExplanation: string;
+    recommendedAction: string; llmModel: string; llmDurationMs: number;
+    fallbackUsed: boolean; findings: unknown; environmentComparison: unknown;
+    checklist: unknown;
+    memoryReferences: Array<{ id: string; externalMemoryId: string; relevanceScore: number | null; snippet: string }>;
+  };
+  resolution: null | {
+    engineerName: string; confirmedRootCause: string; appliedFix: string;
+    preventionGuideline: string; outcome: string; retainedToHindsight: boolean;
+    hindsightMemoryId: string | null; resolvedAt: string;
+  };
+};
+
+function formatRecordDate(value: string | null | undefined) {
+  if (!value) return "Not recorded";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Not recorded"
+    : new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(date);
+}
+
+function JsonEvidence({ value }: { value: unknown }) {
+  if (value === null || value === undefined) {
+    return <p className="text-sm text-text-muted">No evidence was recorded for this field.</p>;
+  }
+  return (
+    <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-surface-border bg-surface-subtle p-4 text-xs leading-relaxed text-text-secondary">
+      {JSON.stringify(value, null, 2)}
+    </pre>
+  );
+}
+
+function LiveDeploymentDetail({ id }: { id: string }) {
+  const [deployment, setDeployment] = useState<LiveDeploymentRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setError(null);
+    fetch(`/api/deployments/${encodeURIComponent(id)}`, { cache: "no-store", signal: controller.signal })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.error || `Could not load deployment (HTTP ${response.status})`);
+        return payload.deployment as LiveDeploymentRecord;
+      })
+      .then(setDeployment)
+      .catch((cause: unknown) => {
+        if (cause instanceof Error && cause.name === "AbortError") return;
+        setError(cause instanceof Error ? cause.message : "Could not load this deployment.");
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [id]);
+
+  return (
+    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 font-sans lg:p-6">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-text-muted">
+        <Link href="/deployments" className="inline-flex items-center gap-1 hover:text-text-primary">
+          <ArrowLeft className="h-3.5 w-3.5" /> Deployments
+        </Link>
+        <span>/</span><span className="font-mono">{id}</span>
+      </nav>
+
+      {loading && <section className="rounded-xl border border-surface-border bg-surface p-8 text-sm text-text-secondary">Loading the recorded deployment from the project database…</section>}
+
+      {!loading && error && (
+        <section role="alert" className="space-y-3 rounded-xl border border-risk-critical/30 bg-risk-critical/5 p-6">
+          <h1 className="text-lg font-semibold text-text-primary">Deployment unavailable</h1>
+          <p className="text-sm text-text-secondary">{error}</p>
+          <p className="text-xs text-text-muted">This ID was not replaced with a sample record. Check the deployment ID and project database connection.</p>
+          <Link href="/deployments" className="inline-flex items-center gap-2 text-sm font-semibold text-signal hover:underline">
+            <ArrowLeft className="h-4 w-4" /> Return to deployment register
+          </Link>
+        </section>
+      )}
+
+      {!loading && deployment && (
+        <>
+          <header className="space-y-4 rounded-xl border border-surface-border bg-surface p-5 shadow-panel">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-mono uppercase tracking-wider text-text-muted">{deployment.project.name}</p>
+                <h1 className="mt-1 text-xl font-semibold text-text-primary">Deployment details</h1>
+                <p className="mt-1 break-all font-mono text-xs text-text-muted">{deployment.id}</p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full border border-surface-border bg-surface-subtle px-3 py-1 text-xs font-semibold uppercase text-text-secondary">{deployment.status.replaceAll("_", " ")}</span>
+                {deployment.assessment?.overallCategory && <span className="rounded-full border border-surface-border bg-surface-subtle px-3 py-1 text-xs font-semibold uppercase text-text-primary">{deployment.assessment.overallCategory}</span>}
+              </div>
+            </div>
+            <div className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              <div><p className="text-xs text-text-muted">Provider</p><p className="mt-1 font-medium text-text-primary">{deployment.provider}</p></div>
+              <div><p className="text-xs text-text-muted">Environment</p><p className="mt-1 font-medium text-text-primary">{deployment.environment}</p></div>
+              <div><p className="text-xs text-text-muted">Branch</p><p className="mt-1 break-all font-mono text-xs text-text-primary">{deployment.branch || "Unknown"}</p></div>
+              <div><p className="text-xs text-text-muted">Started</p><p className="mt-1 text-text-primary">{formatRecordDate(deployment.startedAt)}</p></div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 border-t border-surface-border pt-4">
+              {deployment.url ? <a href={deployment.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-semibold text-signal hover:underline">Open provider deployment <ExternalLink className="h-4 w-4" /></a> : <span className="text-xs text-text-muted">No provider deployment URL was recorded.</span>}
+              <span className="break-all font-mono text-xs text-text-muted">Commit {deployment.commitSha}</span>
+            </div>
+          </header>
+
+          <section className="rounded-xl border border-surface-border bg-surface p-5 shadow-panel">
+            <h2 className="text-base font-semibold text-text-primary">Persisted risk assessment</h2>
+            {deployment.assessment ? (
+              <div className="mt-4 space-y-4">
+                <div><p className="text-xs uppercase tracking-wider text-text-muted">Assessment summary</p><p className="mt-1 text-sm leading-relaxed text-text-primary">{deployment.assessment.summary}</p></div>
+                <div><p className="text-xs uppercase tracking-wider text-text-muted">Grounded explanation</p><p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-text-secondary">{deployment.assessment.groundedExplanation || "No grounded explanation was persisted."}</p></div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-lg bg-surface-subtle p-3"><p className="text-xs text-text-muted">Recommended action</p><p className="mt-1 text-sm font-semibold text-text-primary">{deployment.assessment.recommendedAction}</p></div>
+                  <div className="rounded-lg bg-surface-subtle p-3"><p className="text-xs text-text-muted">LLM model</p><p className="mt-1 break-all text-xs text-text-primary">{deployment.assessment.llmModel}</p></div>
+                  <div className="rounded-lg bg-surface-subtle p-3"><p className="text-xs text-text-muted">Evaluation time</p><p className="mt-1 text-sm text-text-primary">{deployment.assessment.llmDurationMs} ms</p></div>
+                </div>
+                <div><h3 className="mb-2 text-sm font-semibold text-text-primary">Rule findings</h3><JsonEvidence value={deployment.assessment.findings} /></div>
+                <div><h3 className="mb-2 text-sm font-semibold text-text-primary">Environment comparison</h3><JsonEvidence value={deployment.assessment.environmentComparison} /></div>
+                <div><h3 className="mb-2 text-sm font-semibold text-text-primary">Assessment checklist</h3><JsonEvidence value={deployment.assessment.checklist} /></div>
+                <div>
+                  <h3 className="mb-2 text-sm font-semibold text-text-primary">Hindsight memory references ({deployment.assessment.memoryReferences.length})</h3>
+                  {deployment.assessment.memoryReferences.length === 0 ? <p className="text-sm text-text-muted">No historical memory references were attached to this assessment.</p> : (
+                    <div className="space-y-2">
+                      {deployment.assessment.memoryReferences.map((memory) => (
+                        <article key={memory.id} className="rounded-lg border border-surface-border bg-surface-subtle p-3">
+                          <p className="break-all font-mono text-xs text-text-primary">{memory.externalMemoryId}</p>
+                          <p className="mt-1 text-sm text-text-secondary">{memory.snippet}</p>
+                          <p className="mt-1 text-xs text-text-muted">Relevance: {memory.relevanceScore === null ? "Not recorded" : memory.relevanceScore.toFixed(2)}</p>
+                        </article>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : <p className="mt-3 text-sm text-text-muted">No assessment has been persisted for this deployment yet.</p>}
+          </section>
+
+          <section className="rounded-xl border border-surface-border bg-surface p-5 shadow-panel">
+            <h2 className="text-base font-semibold text-text-primary">Deployment evidence</h2>
+            <div className="mt-3"><JsonEvidence value={deployment.evidence} /></div>
+          </section>
+
+          <section className="rounded-xl border border-surface-border bg-surface p-5 shadow-panel">
+            <h2 className="text-base font-semibold text-text-primary">Engineer resolution</h2>
+            {deployment.resolution ? (
+              <div className="mt-3 space-y-2 text-sm text-text-secondary">
+                <p><span className="text-text-muted">Engineer:</span> {deployment.resolution.engineerName}</p>
+                <p><span className="text-text-muted">Outcome:</span> {deployment.resolution.outcome}</p>
+                <p><span className="text-text-muted">Root cause:</span> {deployment.resolution.confirmedRootCause}</p>
+                <p><span className="text-text-muted">Applied fix:</span> {deployment.resolution.appliedFix}</p>
+                <p><span className="text-text-muted">Prevention:</span> {deployment.resolution.preventionGuideline}</p>
+                <p className="text-xs text-text-muted">Resolved {formatRecordDate(deployment.resolution.resolvedAt)} · Hindsight retained: {deployment.resolution.retainedToHindsight ? "Yes" : "No"}</p>
+              </div>
+            ) : <p className="mt-3 text-sm text-text-muted">No engineer resolution has been recorded for this deployment.</p>}
+          </section>
+
+          <p className="rounded-lg border border-surface-border bg-surface-subtle p-3 text-xs leading-relaxed text-text-muted">This is a read-only view of the persisted deployment and assessment. ReleaseTrace does not perform rollback or change a production deployment from this page.</p>
+        </>
+      )}
+    </div>
+  );
+}
