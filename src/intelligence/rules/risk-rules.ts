@@ -20,6 +20,17 @@ export interface RuleEvaluationResult {
   summary: string;
 }
 
+export const RISK_RULE_REGISTRY = [
+  { id: 'RT-RULE-001', name: 'Destructive Schema Migration Detected', category: 'DATABASE', severity: 'CRITICAL' },
+  { id: 'RT-RULE-002', name: 'Unsafe Index/Migration Lock Guard', category: 'DATABASE', severity: 'HIGH' },
+  { id: 'RT-RULE-003', name: 'Production High-Availability Floor Violation', category: 'INFRASTRUCTURE', severity: 'HIGH' },
+  { id: 'RT-RULE-004', name: 'Database Connection Pool Over-allocation', category: 'DATABASE', severity: 'HIGH' },
+  { id: 'RT-RULE-005', name: 'Active Production Error Spike Pre-Deploy', category: 'TELEMETRY', severity: 'CRITICAL' },
+  { id: 'RT-RULE-006', name: 'Pre-Deployment Connection Pool Saturation', category: 'TELEMETRY', severity: 'CRITICAL' },
+  { id: 'RT-RULE-007', name: 'High Compute Load Pre-Deploy', category: 'TELEMETRY', severity: 'MEDIUM' },
+  { id: 'RT-RULE-008', name: 'Recurrence of Verified Historical Incident Pattern', category: 'MEMORY', severity: 'HIGH' },
+] as const;
+
 export function evaluateDeterministicRules(
   deployment: DeploymentContext,
   matchingMemories: VerifiedEngineeringMemory[] = []

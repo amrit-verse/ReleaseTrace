@@ -37,13 +37,14 @@ export class ProjectMemoryBankManager {
    * e.g., "my-payment-service" -> "rt-my-payment-service"
    */
   public getProjectBankId(projectId: string): string {
-    const sanitized = projectId
+    const raw = (projectId && projectId.trim().length > 0) ? projectId : 'auth-gateway';
+    const sanitized = raw
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9_-]/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-+|-+$/g, '');
-    return `rt-${sanitized}`;
+    return `rt-${sanitized || 'auth-gateway'}`;
   }
 
   /**

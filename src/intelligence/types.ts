@@ -57,6 +57,7 @@ export interface DeploymentContext {
   environment: EnvironmentConfig;
   targetEnvironment: 'production' | 'staging' | 'canary';
   telemetrySnapshot?: TelemetrySnapshot;
+  environmentNotes?: string;
 }
 
 export interface FailureIncident {

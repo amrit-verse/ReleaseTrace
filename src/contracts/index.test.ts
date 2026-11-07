@@ -3,9 +3,6 @@ import {
   DeploymentEvidenceSchema,
   DeploymentEventSchema,
   DeploymentMemoryCaseSchema,
-  MemoryRecallResultSchema,
-  EnvironmentComparisonSchema,
-  RiskFindingSchema,
   ReleaseAssessmentSchema,
   VerifiedResolutionSchema,
 } from "./index";
@@ -131,5 +128,53 @@ describe("Shared Contracts & Zod Schemas", () => {
     const parsed = ReleaseAssessmentSchema.parse(validAssessment);
     expect(parsed.overallCategory).toBe("HIGH_RISK");
     expect(parsed.findings.length).toBe(1);
+  });
+
+  it("validates DeploymentEventSchema correctly", () => {
+    const validEvent = {
+      eventId: "evt_123",
+      provider: "github_actions",
+      projectId: "proj_01",
+      projectName: "ReleaseTrace",
+      eventType: "deployment_started",
+      timestamp: new Date().toISOString(),
+      evidence: {
+        commitSha: "a1b2c3d4e5",
+        branch: "main",
+        commitMessage: "feat: deploy",
+        author: "alex",
+        repository: "releasetrace/web",
+        framework: "nextjs",
+        runtimeVersion: "nodejs-22",
+        buildPassed: true,
+        testsPassed: true,
+        environment: "production",
+        collectedAt: new Date().toISOString(),
+      },
+    };
+
+    const parsed = DeploymentEventSchema.parse(validEvent);
+    expect(parsed.eventId).toBe("evt_123");
+    expect(parsed.provider).toBe("github_actions");
+  });
+
+  it("validates VerifiedResolutionSchema correctly", () => {
+    const validResolution = {
+      assessmentId: "123e4567-e89b-12d3-a456-426614174000",
+      deploymentId: "dep_99",
+      projectId: "proj_01",
+      engineerName: "Marcus Vance",
+      engineerEmail: "marcus.vance@engineering.internal",
+      confirmedRootCause: "Missing statement timeout in migration lock",
+      appliedFix: "Added lock_timeout guard before DDL execution",
+      preventionGuideline: "Always set lock_timeout on production migrations",
+      outcome: "SUCCESSFUL_RELEASE",
+      retainToHindsight: true,
+      resolvedAt: new Date().toISOString(),
+    };
+
+    const parsed = VerifiedResolutionSchema.parse(validResolution);
+    expect(parsed.engineerName).toBe("Marcus Vance");
+    expect(parsed.outcome).toBe("SUCCESSFUL_RELEASE");
   });
 });

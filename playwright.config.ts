@@ -8,14 +8,14 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:3005",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
   webServer: {
-    command: "npm run start",
-    url: "http://localhost:3000/dashboard",
-    reuseExistingServer: !process.env.CI,
+    command: "npm run start -- -p 3005",
+    url: "http://localhost:3005/dashboard",
+    reuseExistingServer: false,
     timeout: 60000,
   },
   projects: [

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   evaluateRecallRelevance,
-  evaluateMemoryRelevance,
   calculateSignatureSimilarity,
 } from '../src/intelligence/memory/relevance';
 import type { VerifiedEngineeringMemory, DeploymentContext, EnvironmentComparisonResult } from '../src/intelligence/types';

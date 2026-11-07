@@ -16,7 +16,7 @@ import { ProjectMemoryBankManager } from '../hindsight/bank-manager';
 import { ExperienceRetentionWorkflow } from '../hindsight/retention';
 import { HistoricalRecallWorkflow } from '../hindsight/recall';
 import { compareEnvironments } from '../memory/environment-comparator';
-import { evaluateRecallRelevance, type ScoredMemory } from '../memory/relevance';
+import { evaluateRecallRelevance } from '../memory/relevance';
 import { detectMemoryContradictions } from '../memory/contradiction-detector';
 import { evaluateDeterministicRules } from '../rules/risk-rules';
 import { GroqAdapter } from '../llm/groq-adapter';

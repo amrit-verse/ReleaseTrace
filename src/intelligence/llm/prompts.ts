@@ -65,6 +65,7 @@ export function buildAssessmentPrompt(params: {
     `- Runtime: ${deployment.environment.runtime}`,
     `- Database: ${deployment.environment.database.type} v${deployment.environment.database.version} (Pool: ${deployment.environment.database.poolSize ?? 'default'}, Timeout: ${deployment.environment.database.maxIdleTimeoutMs ?? 'default'}ms)`,
     `- Infrastructure: ${deployment.environment.infrastructure.provider} (${deployment.environment.infrastructure.replicas} replicas)`,
+    deployment.environmentNotes ? `- Environment Notes: ${deployment.environmentNotes}` : '',
     deployment.telemetrySnapshot
       ? `CURRENT TELEMETRY SNAPSHOT: Error Rate: ${(deployment.telemetrySnapshot.errorRate * 100).toFixed(1)}%, P95: ${deployment.telemetrySnapshot.p95LatencyMs}ms, Pool Saturation: ${(deployment.telemetrySnapshot.connectionPoolSaturation * 100).toFixed(0)}%`
       : 'CURRENT TELEMETRY SNAPSHOT: Normal / No pre-deploy telemetry anomalies reported.',

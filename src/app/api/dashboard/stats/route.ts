@@ -1,52 +1,94 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { HindsightAdapter } from "@/intelligence/hindsight/adapter";
+import { ProjectMemoryBankManager } from "@/intelligence/hindsight/bank-manager";
+import { RISK_RULE_REGISTRY } from "@/intelligence/rules/risk-rules";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const totalDeployments = await prisma.deployment.count();
-    const activeAssessments = await prisma.assessment.count();
-    const criticalBlockedCount = await prisma.deployment.count({
-      where: {
-        assessment: {
-          overallCategory: "CRITICAL",
-        },
-      },
-    });
+    const { searchParams } = new URL(request.url);
+    const projectId =
+      searchParams.get("projectId") ||
+      searchParams.get("service") ||
+      "auth-gateway";
 
-    // Count of risk rules
-    const deterministicRuleCount = 8; // Number of static rule checks implemented in risk-rules.ts
+    // Dynamic count from actual risk rule registry
+    const deterministicRuleCount = RISK_RULE_REGISTRY.length;
 
-    // Memories from Hindsight
-    const adapter = HindsightAdapter.getInstance();
-    let verifiedPrecedentsCount = 0;
+    // Database statistics with graceful empty fallback
+    let totalDeployments = 0;
+    let activeAssessments = 0;
+    let criticalBlockedCount = 0;
+    let latestDeployments: unknown[] = [];
+
     try {
-      const bankId = process.env.HINDSIGHT_BANK_PREFIX || "releasetrace";
-      const recallResult = await adapter.recall(bankId, "deployment failure");
-      verifiedPrecedentsCount = recallResult.results.length;
+      totalDeployments = await prisma.deployment.count({
+        where: projectId ? { projectId } : undefined,
+      });
+      activeAssessments = await prisma.assessment.count();
+      criticalBlockedCount = await prisma.deployment.count({
+        where: {
+          assessment: {
+            overallCategory: "CRITICAL",
+          },
+        },
+      });
+
+      latestDeployments = await prisma.deployment.findMany({
+        where: projectId ? { projectId } : undefined,
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        include: {
+          assessment: true,
+        },
+      });
     } catch {
-      verifiedPrecedentsCount = 0;
+      // Database not reachable or unmigrated; report 0 honestly
+      totalDeployments = 0;
+      activeAssessments = 0;
+      criticalBlockedCount = 0;
+      latestDeployments = [];
     }
 
-    const latestDeployments = await prisma.deployment.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 5,
-      include: {
-        assessment: true,
-      },
-    });
+    // Memories from canonical project bank
+    const adapter = HindsightAdapter.getInstance();
+    const bankManager = new ProjectMemoryBankManager(adapter);
+    const bankId = bankManager.getProjectBankId(projectId);
+
+    let verifiedPrecedentsCount = 0;
+    if (adapter.isMock()) {
+      verifiedPrecedentsCount = adapter.getBankMemoriesCount(bankId);
+    } else {
+      try {
+        const bankProfile = await adapter.getRawClient().getBankProfile(bankId);
+        verifiedPrecedentsCount =
+          (bankProfile as unknown as { document_count?: number; items_count?: number })
+            ?.document_count ??
+          (bankProfile as unknown as { items_count?: number })?.items_count ??
+          0;
+      } catch {
+        verifiedPrecedentsCount = 0;
+      }
+    }
 
     return NextResponse.json({
+      projectId,
+      bankId,
       totalDeployments,
       activeAssessments,
       criticalBlockedCount,
       verifiedPrecedentsCount,
       deterministicRuleCount,
       latestDeployments,
+      rules: RISK_RULE_REGISTRY,
+      isMock: adapter.isMock(),
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { error: "Failed to fetch dashboard stats", details: err?.message || String(err) },
+      {
+        error: "Failed to fetch dashboard stats",
+        details: err instanceof Error ? err.message : String(err),
+      },
       { status: 500 }
     );
   }

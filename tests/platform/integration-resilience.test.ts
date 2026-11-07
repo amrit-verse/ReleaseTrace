@@ -2,15 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { POST } from "@/app/api/webhooks/deployments/route";
 import { generateHmacSignature, signPayload, verifySignature } from "@/lib/security/signature";
 import { VercelClient, VercelApiError, correlateVercelDeployment } from "@/lib/vercel/index";
-import { inngest } from "@/lib/inngest/client";
 import { processDeploymentWebhook } from "@/lib/inngest/functions";
-import prisma from "@/lib/db/client";
 import { NextRequest } from "next/server";
 
 vi.mock("@/lib/db/client", () => {
   const mockWebhookEvents = new Map();
   const mockDeployments = new Map();
-  const mockProjects = new Map();
 
   return {
     default: {

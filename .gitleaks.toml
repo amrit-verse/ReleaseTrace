@@ -1,0 +1,10 @@
+[allowlist]
+description = "Ignore build artifacts and gitignored local development files"
+paths = [
+  '''\.next/''',
+  '''node_modules/''',
+  '''test-results/''',
+  '''playwright-report/''',
+  '''\.env$''',
+  '''\.env\.local$''',
+]

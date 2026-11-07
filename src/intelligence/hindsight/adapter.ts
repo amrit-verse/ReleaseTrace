@@ -57,12 +57,13 @@ export class HindsightAdapter {
   private mockedCalls: Set<string> = new Set();
 
   private constructor(config: HindsightAdapterConfig = {}) {
+    const apiKey = config.apiKey || process.env.HINDSIGHT_API_KEY;
     this.config = {
       baseUrl: config.baseUrl || process.env.HINDSIGHT_BASE_URL || process.env.HINDSIGHT_API_URL || 'https://api.hindsight.vectorize.io',
-      apiKey: config.apiKey || process.env.HINDSIGHT_API_KEY,
+      apiKey,
       userAgent: config.userAgent || 'releasetrace-engine/1.0.0',
       maxAttempts: config.maxAttempts || 3,
-      useMockTransport: config.useMockTransport ?? (process.env.HINDSIGHT_USE_MOCK === 'true' || (!process.env.HINDSIGHT_API_KEY && process.env.NODE_ENV === 'test')),
+      useMockTransport: config.useMockTransport ?? (process.env.HINDSIGHT_USE_MOCK === 'true' || !apiKey || process.env.NODE_ENV === 'test'),
     };
 
     this.isMockMode = Boolean(this.config.useMockTransport);
@@ -311,6 +312,20 @@ export class HindsightAdapter {
 
     this.realSdkCalls.add('recall');
     return await this.client.recall(bankId, query, options);
+  }
+
+  /**
+   * Helper: get total count of memories in a bank
+   */
+  public getBankMemoriesCount(bankId: string): number {
+    return (this.mockMemories.get(bankId) || []).length;
+  }
+
+  /**
+   * Helper: retrieve in-memory stored memories for a bank
+   */
+  public getMockMemories(bankId: string): InMemoryStoredMemory[] {
+    return this.mockMemories.get(bankId) || [];
   }
 
   /**

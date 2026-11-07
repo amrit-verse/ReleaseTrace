@@ -51,6 +51,10 @@ export class HistoricalRecallWorkflow {
       );
     }
 
+    if (deployment.environmentNotes) {
+      queryParts.push(`Environment context: ${deployment.environmentNotes}`);
+    }
+
     if (deployment.telemetrySnapshot) {
       if (deployment.telemetrySnapshot.connectionPoolSaturation > 0.5) {
         queryParts.push('database connection pool exhaustion saturation');
@@ -103,7 +107,7 @@ export class HistoricalRecallWorkflow {
       }
 
       return recalledItems;
-    } catch (err) {
+    } catch {
       // In case the bank does not exist yet (e.g. freshly initialized empty bank)
       return [];
     }

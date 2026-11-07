@@ -110,7 +110,7 @@ export class GroqAdapter {
 
       const rawContent = response.choices[0]?.message?.content || '{}';
       return this.parseAndValidate(rawContent);
-    } catch (err) {
+    } catch {
       // If the real API call fails, fallback gracefully to deterministic generation
       this.mockCallCount++;
       return this.generateDeterministicAssessment(prompt, contextMetadata);
@@ -131,7 +131,7 @@ export class GroqAdapter {
     let parsedObject: unknown;
     try {
       parsedObject = JSON.parse(cleanJson);
-    } catch (parseErr) {
+    } catch {
       throw new Error(`Groq LLM output is not valid JSON: ${cleanJson.substring(0, 200)}...`);
     }
 
