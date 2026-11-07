@@ -1,5 +1,13 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { ReleaseTraceReasoningEngine } from "@/band-agent/reasoning";
+
+vi.mock("@/lib/db", () => ({
+  prisma: {
+    deployment: {
+      findFirst: vi.fn().mockResolvedValue(null),
+    },
+  },
+}));
 
 describe("Band Agent: Reasoning Engine", () => {
   let reasoning: ReleaseTraceReasoningEngine;
