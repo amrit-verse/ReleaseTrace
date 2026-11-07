@@ -8,7 +8,7 @@ Nothing was wrong with the pipeline. It just has no memory. Every run starts fre
 
 That gap is why I built **ReleaseTrace**.
 
-🔗 [Live demo](https://release-trace-red.vercel.app/dashboard) · [Source code](https://github.com/amrit-verse/ReleaseTrace)
+🔗 [Live demo](https://releasetrace.vercel.app/dashboard) · [Source code](https://github.com/amrit-verse/ReleaseTrace)
 
 ---
 

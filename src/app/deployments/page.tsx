@@ -227,8 +227,35 @@ export default function DeploymentsHistoryPage() {
             <h2 className="text-sm font-bold text-text-primary">Release events</h2>
             <p className="mt-0.5 text-xs text-text-muted">Sorted by most recently recorded.</p>
           </div>
-          {loading && <span className="text-[10px] font-mono uppercase text-text-muted">Loading…</span>}
+          {loading && (
+            <span className="text-[10px] font-mono uppercase text-text-muted flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-signal animate-ping"></span>
+              Streaming events…
+            </span>
+          )}
         </div>
+
+        {loading && (
+          <div className="divide-y divide-surface-border">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 space-y-2 flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="h-5 w-20 rounded-full liquid-skeleton"></div>
+                    <div className="h-5 w-16 rounded-full liquid-skeleton"></div>
+                    <div className="h-3 w-28 rounded liquid-skeleton"></div>
+                  </div>
+                  <div className="h-4 w-48 rounded liquid-skeleton"></div>
+                  <div className="h-3 w-36 rounded liquid-skeleton"></div>
+                  <div className="h-3 w-3/4 rounded liquid-skeleton"></div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="h-9 w-24 rounded-lg liquid-skeleton"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {!loading && data?.deployments.length === 0 && (
           <div className="flex min-h-56 flex-col items-center justify-center px-4 text-center">

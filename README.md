@@ -161,7 +161,7 @@ npm run db:generate
 
 ## 6. Verification & Quality Gates
 
-Run the automated test suite (60 unit and integration tests):
+Run the automated test suite (101 unit and integration tests across 21 suites):
 ```bash
 npm run test
 ```
@@ -214,11 +214,16 @@ Start the development server:
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000):
-- **`/dashboard`**: Pre-flight release engineering dashboard with real-time risk gauges.
-- **`/deployments`**: Timeline of recent deployments, correlation status, and Prisma migration indicators.
-- **`/deployments/[id]`**: Granular assessment detail, cited evidence, environment comparison card, and human verification checklist.
-- **`/memories`**: Memory Bank Explorer showing project memory banks, provenance, and human retention audit logs.
+Open [http://localhost:3000](http://localhost:3000) (or live at [releasetrace.vercel.app](https://releasetrace.vercel.app)):
+- **`/dashboard`**: Pre-flight release operations overview with Liquid Glass telemetry, critical interception inspection, and pressure matrix.
+- **`/deployments`**: Deployment Register timeline with environment filtering, immutable audit trail, and Prisma migration indicators.
+- **`/deployments/[id]`**: Granular assessment detail, cited evidence, environment comparison, and human engineer verification gate.
+- **`/memories`**: Hindsight Memory Bank Explorer with semantic recall, severity filters, and verified resolution indexing.
+- **`/learning-lab`**: Interactive Learning Lab with cold vs warm rehearsal scenarios, drift analysis, and precedent matching.
+- **`/integrations`**: Real-time health probes across Inngest, Hindsight Cloud, Neon PostgreSQL, and Groq.
+- **`/settings`**: Release policy configuration and project preferences.
+- **DevOps 101 Toolkit**: 5-Stage Architecture Flow modal, Release Simulator Sandbox, and interactive DevOps Glossary.
+
 ### D. Dedicated Band AI Agent Worker
 Connect ReleaseTrace as a persistent collaborative SRE agent in Band:
 ```bash
