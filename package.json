@@ -18,9 +18,11 @@
     "smoke:hindsight": "tsx scripts/smoke-hindsight.ts",
     "test:e2e": "playwright test",
     "rehearse": "tsx scripts/run-demo.ts",
-    "demo": "tsx scripts/run-demo.ts"
+    "demo": "tsx scripts/run-demo.ts",
+    "band:agent": "tsx src/band-agent/index.ts"
   },
   "dependencies": {
+    "@band-ai/sdk": "^1.0.0",
     "@neondatabase/serverless": "^1.2.0",
     "@prisma/adapter-neon": "^6.4.1",
     "@prisma/client": "^6.4.1",

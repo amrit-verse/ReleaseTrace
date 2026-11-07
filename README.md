@@ -9,7 +9,8 @@
 [![Neon](https://img.shields.io/badge/Database-Neon%20Postgres-00e599.svg)](https://neon.tech/)
 [![Inngest](https://img.shields.io/badge/Workflows-Inngest-f59e0b.svg)](https://www.inngest.com/)
 [![Groq](https://img.shields.io/badge/LLM-Groq-f97316.svg)](https://groq.com/)
-[![Tests](https://img.shields.io/badge/Tests-60%20passing-10b981.svg)](https://vitest.dev/)
+[![Band AI](https://img.shields.io/badge/Band%20AI-Connected%20Live%20Agent-6366f1.svg)](https://app.band.ai)
+[![Tests](https://img.shields.io/badge/Tests-101%20passing-10b981.svg)](https://vitest.dev/)
 
 ---
 
@@ -218,7 +219,12 @@ Open [http://localhost:3000](http://localhost:3000):
 - **`/deployments`**: Timeline of recent deployments, correlation status, and Prisma migration indicators.
 - **`/deployments/[id]`**: Granular assessment detail, cited evidence, environment comparison card, and human verification checklist.
 - **`/memories`**: Memory Bank Explorer showing project memory banks, provenance, and human retention audit logs.
-- **`/learning-lab`**: Interactive 3-step rehearsal lab demonstrating cold evaluation vs warm evaluation.
+### D. Dedicated Band AI Agent Worker
+Connect ReleaseTrace as a persistent collaborative SRE agent in Band:
+```bash
+npm run band:agent
+```
+For complete setup, room mention protocols, and persistence guides, see [Band Integration Guide](docs/BAND_INTEGRATION.md).
 
 ---
 

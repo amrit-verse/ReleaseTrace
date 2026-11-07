@@ -12,6 +12,7 @@ import {
 import { mockDefaultSettings } from "@/data/mockData";
 import { WorkspaceSettings } from "@/types";
 import { PageHeader } from "@/components/ui/PageHeader";
+import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
 import { useToast } from "@/components/ui/ToastProvider";
 import {
   fadeInVariants,
@@ -68,6 +69,14 @@ export default function SettingsPage() {
             <span>Export Config JSON</span>
           </motion.button>
         }
+      />
+
+      <PlainEnglishCallout
+        title="Workspace & CI Safety Policies Explained"
+        analogy="Think of these policies like safety regulations for a building. You define the maximum risk score allowed without manual approval, whether database migrations require senior engineer sign-off, and where to send alerts if something breaks."
+        explanation="Settings configure how ReleaseTrace evaluates pull requests. Thresholds set the line between automatic passes and human review gates. Notifications automatically inform your team via Slack or PagerDuty whenever an assessment halts a risky deployment."
+        whyItMatters="Configuring clear, automated rules removes guesswork from releases. Senior engineers aren't pestered for routine UI fixes, while high-risk database alterations are guaranteed to get careful review."
+        keyTerms={["Deterministic Risk Threshold", "Senior Engineer Sign-off Gate", "Audit Export", "Automated Halt"]}
       />
 
       <form onSubmit={handleSave} className="space-y-6">

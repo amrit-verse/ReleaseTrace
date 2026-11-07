@@ -81,6 +81,29 @@ export class GroqAdapter {
   }
 
   /**
+   * Generates a plain text conversational explanation with Groq LLM.
+   */
+  public async generateExplanation(prompt: string, systemPrompt?: string): Promise<string> {
+    if (this.isMockMode || !this.client) {
+      return '';
+    }
+    try {
+      const response = await this.client.chat.completions.create({
+        model: this.model,
+        messages: [
+          { role: 'system', content: systemPrompt || RELEASETRACE_SYSTEM_PROMPT },
+          { role: 'user', content: prompt },
+        ],
+        temperature: this.temperature,
+        max_tokens: this.maxTokens,
+      });
+      return response.choices[0]?.message?.content || '';
+    } catch {
+      return '';
+    }
+  }
+
+  /**
    * Generates a validated release risk assessment.
    */
   public async generateAssessment(prompt: string, contextMetadata?: {

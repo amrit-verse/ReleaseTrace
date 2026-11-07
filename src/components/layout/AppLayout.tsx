@@ -133,7 +133,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           <button
             type="button"
             onClick={() => setIsSimulatorModalOpen(true)}
-            className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-signal/40 bg-signal/10 px-2.5 py-1.5 text-xs font-semibold text-signal shadow-panel-subtle transition hover:bg-signal/20"
+            className="hidden sm:inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-signal/40 bg-signal/10 px-2.5 py-1.5 text-xs font-semibold text-signal shadow-panel-subtle transition hover:bg-signal/20"
             title="Test a simulated release scenario"
           >
             <Zap className="h-3.5 w-3.5" />
@@ -281,9 +281,14 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
             </section>
           </div>
 
-          <div className="space-y-1 border-t border-surface-border px-2 pt-3">
-            <p className="text-[11px] font-semibold text-text-secondary">Project-scoped memory</p>
-            <p className="text-[10px] leading-relaxed text-text-muted">Vectorize Hindsight · Historical context is not current telemetry.</p>
+          <div className="space-y-1.5 border-t border-surface-border px-2 pt-3 pb-1">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold text-text-secondary">
+              <span className="h-1.5 w-1.5 rounded-full bg-signal" />
+              <span>Project Memory Bank</span>
+            </div>
+            <p className="text-[10px] leading-relaxed text-text-muted">
+              Vectorize Hindsight · Pre-flight incident recall
+            </p>
           </div>
         </aside>
 
@@ -381,7 +386,7 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
           )}
         </AnimatePresence>
 
-        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto pb-20 lg:pb-0">
+        <main className="flex min-w-0 flex-1 flex-col overflow-y-auto pb-28 lg:pb-0">
           {children}
         </main>
       </div>

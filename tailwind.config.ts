@@ -1,5 +1,9 @@
 import type { Config } from "tailwindcss";
 
+function withOpacity(variableName: string) {
+  return `rgba(var(${variableName}), <alpha-value>)`;
+}
+
 const config: Config = {
   darkMode: "class",
   content: [
@@ -32,34 +36,34 @@ const config: Config = {
           container: "#926c59",
         },
         surface: {
-          DEFAULT: "#faf9f9",
-          dim: "#dadada",
-          bright: "#faf9f9",
-          variant: "#e3e2e2",
-          subtle: "#f4f3f3",
-          elevated: "#ffffff",
-          overlay: "#ffffff",
-          muted: "#eeeeed",
-          border: "#e2e8f0",
-          "border-subtle": "rgba(113, 120, 121, 0.15)",
-          "container-lowest": "#ffffff",
-          "container-low": "#f4f3f3",
-          container: "#eeeeed",
-          "container-high": "#e8e8e8",
-          "container-highest": "#e3e2e2",
+          DEFAULT: withOpacity("--surface-rgb"),
+          dim: withOpacity("--surface-dim-rgb"),
+          bright: withOpacity("--surface-bright-rgb"),
+          variant: withOpacity("--surface-dim-rgb"),
+          subtle: withOpacity("--surface-subtle-rgb"),
+          elevated: withOpacity("--surface-elevated-rgb"),
+          overlay: withOpacity("--surface-overlay-rgb"),
+          muted: withOpacity("--surface-muted-rgb"),
+          border: withOpacity("--surface-border-rgb"),
+          "border-subtle": withOpacity("--surface-border-subtle-rgb"),
+          "container-lowest": withOpacity("--surface-container-lowest-rgb"),
+          "container-low": withOpacity("--surface-container-low-rgb"),
+          container: withOpacity("--surface-container-rgb"),
+          "container-high": withOpacity("--surface-container-high-rgb"),
+          "container-highest": withOpacity("--surface-container-highest-rgb"),
         },
-        "on-surface": "#1a1c1c",
-        "on-surface-variant": "#414849",
+        "on-surface": withOpacity("--text-primary-rgb"),
+        "on-surface-variant": withOpacity("--text-secondary-rgb"),
         outline: {
           DEFAULT: "#717879",
           variant: "#c1c8c8",
         },
         brand: {
-          DEFAULT: "#426164",
-          subtle: "#f0f5f6",
-          accent: "#2f4f52",
-          hindsight: "#426164",
-          "hindsight-dark": "#2f4f52",
+          DEFAULT: withOpacity("--signal-rgb"),
+          subtle: withOpacity("--brand-subtle-rgb"),
+          accent: withOpacity("--signal-hover-rgb"),
+          hindsight: withOpacity("--signal-rgb"),
+          "hindsight-dark": withOpacity("--signal-hover-rgb"),
           cyan: "#0284c7",
           emerald: "#059669",
           amber: "#d97706",
@@ -67,22 +71,22 @@ const config: Config = {
         },
         // Backward-compatible tokens mapped cleanly to new palette
         canvas: {
-          DEFAULT: "#faf9f9",
-          dark: "#f4f3f3",
+          DEFAULT: withOpacity("--canvas-rgb"),
+          dark: withOpacity("--canvas-dark-rgb"),
         },
         signal: {
-          DEFAULT: "#426164",
-          hover: "#2f4f52",
-          subtle: "rgba(66, 97, 100, 0.12)",
+          DEFAULT: withOpacity("--signal-rgb"),
+          hover: withOpacity("--signal-hover-rgb"),
+          subtle: withOpacity("--signal-subtle-rgb"),
         },
         sage: {
-          DEFAULT: "#059669",
-          subtle: "rgba(5, 150, 105, 0.12)",
+          DEFAULT: withOpacity("--sage-rgb"),
+          subtle: withOpacity("--sage-subtle-rgb"),
         },
         text: {
-          primary: "#1a1c1c",
-          secondary: "#414849",
-          muted: "#717879",
+          primary: withOpacity("--text-primary-rgb"),
+          secondary: withOpacity("--text-secondary-rgb"),
+          muted: withOpacity("--text-muted-rgb"),
         },
         risk: {
           critical: "#dc2626",
@@ -92,8 +96,8 @@ const config: Config = {
           verified: "#426164",
           insufficient: "#717879",
         },
-        background: "#faf9f9",
-        foreground: "#1a1c1c",
+        background: withOpacity("--canvas-rgb"),
+        foreground: withOpacity("--text-primary-rgb"),
       },
       borderRadius: {
         sm: "0.25rem",

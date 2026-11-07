@@ -18,6 +18,7 @@ const eslintConfig = [
       "test-results/**",
       "playwright-report/**",
       "coverage/**",
+      "scratch/**",
     ],
   },
   ...compat.extends("next/core-web-vitals", "next/typescript"),

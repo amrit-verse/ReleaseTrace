@@ -4,30 +4,54 @@
 @tailwind utilities;
 
 :root {
-  /* ReleaseTrace Pristine White Liquid Glass Baseline */
-  --canvas: #ffffff;
-  --surface: #ffffff;
-  --surface-dim: #f1f5f9;
-  --surface-container-lowest: #ffffff;
-  --surface-container-low: #f8fafc;
-  --surface-container: #f1f5f9;
-  --surface-container-high: #e2e8f0;
-  --surface-container-highest: #cbd5e1;
-  
-  --surface-elevated: #ffffff;
-  --surface-subtle: #f8fafc;
-  --surface-border: #e2e8f0;
-  
+  /* ReleaseTrace Pristine White Baseline */
+  --canvas-rgb: 255, 255, 255;
+  --canvas-dark-rgb: 248, 250, 252;
+  --surface-rgb: 255, 255, 255;
+  --surface-dim-rgb: 241, 245, 249;
+  --surface-bright-rgb: 255, 255, 255;
+  --surface-subtle-rgb: 248, 250, 252;
+  --surface-elevated-rgb: 255, 255, 255;
+  --surface-overlay-rgb: 255, 255, 255;
+  --surface-muted-rgb: 241, 245, 249;
+  --surface-border-rgb: 226, 232, 240;
+  --surface-border-subtle-rgb: 241, 245, 249;
+  --surface-container-lowest-rgb: 255, 255, 255;
+  --surface-container-low-rgb: 248, 250, 252;
+  --surface-container-rgb: 241, 245, 249;
+  --surface-container-high-rgb: 226, 232, 240;
+  --surface-container-highest-rgb: 203, 213, 225;
+
+  --text-primary-rgb: 15, 23, 42;
+  --text-secondary-rgb: 51, 65, 85;
+  --text-muted-rgb: 100, 116, 139;
+
+  --signal-rgb: 2, 132, 199;
+  --signal-hover-rgb: 3, 105, 161;
+  --signal-subtle-rgb: 240, 249, 255;
+
+  --brand-rgb: 2, 132, 199;
+  --brand-subtle-rgb: 240, 249, 255;
+  --brand-accent-rgb: 3, 105, 161;
+
+  --sage-rgb: 5, 150, 105;
+  --sage-subtle-rgb: 236, 253, 245;
+
+  --canvas: rgb(var(--canvas-rgb));
+  --surface: rgb(var(--surface-rgb));
+  --surface-dim: rgb(var(--surface-dim-rgb));
+  --surface-elevated: rgb(var(--surface-elevated-rgb));
+  --surface-subtle: rgb(var(--surface-subtle-rgb));
+  --surface-border: rgb(var(--surface-border-rgb));
+  --text-primary: rgb(var(--text-primary-rgb));
+  --text-secondary: rgb(var(--text-secondary-rgb));
+  --text-muted: rgb(var(--text-muted-rgb));
   --primary: #0f172a;
   --primary-container: #1e293b;
   --secondary: #475569;
   --signal-blue: #0284c7;
   --verified-sage: #059669;
-  
-  --text-primary: #0f172a;
-  --text-secondary: #334155;
-  --text-muted: #64748b;
-  
+
   --risk-critical: #dc2626;
   --risk-warning: #d97706;
   --risk-nominal: #059669;
@@ -335,8 +359,52 @@ html[data-theme="light"] .border-slate-200 { border-color: rgba(226, 232, 240, 0
 /* =============================================================
    2. MIDNIGHT OBSIDIAN (DARK MODE)
    ============================================================= */
-html[data-theme="dark"] {
+html[data-theme="dark"],
+html.dark:not([data-theme="warm-brown"]):not([data-theme="cyber-teal"]):not([data-theme="sunset-rose"]) {
   color-scheme: dark;
+  --canvas-rgb: 11, 18, 32;
+  --canvas-dark-rgb: 7, 12, 22;
+  --surface-rgb: 16, 26, 43;
+  --surface-dim-rgb: 13, 21, 35;
+  --surface-bright-rgb: 24, 38, 62;
+  --surface-subtle-rgb: 20, 33, 54;
+  --surface-elevated-rgb: 24, 40, 66;
+  --surface-overlay-rgb: 30, 50, 82;
+  --surface-muted-rgb: 20, 33, 54;
+  --surface-border-rgb: 40, 58, 86;
+  --surface-border-subtle-rgb: 26, 40, 62;
+  --surface-container-lowest-rgb: 11, 18, 32;
+  --surface-container-low-rgb: 13, 21, 35;
+  --surface-container-rgb: 16, 26, 43;
+  --surface-container-high-rgb: 24, 40, 66;
+  --surface-container-highest-rgb: 34, 54, 88;
+
+  --text-primary-rgb: 248, 250, 252;
+  --text-secondary-rgb: 203, 213, 225;
+  --text-muted-rgb: 148, 163, 184;
+
+  --signal-rgb: 56, 189, 248;
+  --signal-hover-rgb: 125, 211, 252;
+  --signal-subtle-rgb: 14, 40, 65;
+
+  --brand-rgb: 56, 189, 248;
+  --brand-subtle-rgb: 14, 40, 65;
+  --brand-accent-rgb: 125, 211, 252;
+
+  --sage-rgb: 16, 185, 129;
+  --sage-subtle-rgb: 6, 50, 40;
+
+  --canvas: rgb(var(--canvas-rgb));
+  --surface: rgb(var(--surface-rgb));
+  --surface-dim: rgb(var(--surface-dim-rgb));
+  --surface-elevated: rgb(var(--surface-elevated-rgb));
+  --surface-subtle: rgb(var(--surface-subtle-rgb));
+  --surface-border: rgb(var(--surface-border-rgb));
+  --text-primary: rgb(var(--text-primary-rgb));
+  --text-secondary: rgb(var(--text-secondary-rgb));
+  --text-muted: rgb(var(--text-muted-rgb));
+  --background: var(--canvas);
+  --foreground: var(--text-primary);
 }
 
 html[data-theme="dark"] .liquid-glass-stage {
@@ -483,6 +551,49 @@ html[data-theme="dark"] .border-slate-200 { border-color: rgba(255, 255, 255, 0.
    ============================================================= */
 html[data-theme="warm-brown"] {
   color-scheme: dark;
+  --canvas-rgb: 25, 22, 20;
+  --canvas-dark-rgb: 18, 15, 14;
+  --surface-rgb: 36, 32, 28;
+  --surface-dim-rgb: 30, 26, 23;
+  --surface-bright-rgb: 48, 43, 38;
+  --surface-subtle-rgb: 44, 39, 34;
+  --surface-elevated-rgb: 54, 48, 42;
+  --surface-overlay-rgb: 66, 58, 52;
+  --surface-muted-rgb: 40, 35, 31;
+  --surface-border-rgb: 68, 60, 53;
+  --surface-border-subtle-rgb: 48, 42, 37;
+  --surface-container-lowest-rgb: 25, 22, 20;
+  --surface-container-low-rgb: 30, 26, 23;
+  --surface-container-rgb: 36, 32, 28;
+  --surface-container-high-rgb: 46, 41, 36;
+  --surface-container-highest-rgb: 60, 54, 48;
+
+  --text-primary-rgb: 251, 249, 247;
+  --text-secondary-rgb: 215, 206, 199;
+  --text-muted-rgb: 166, 154, 145;
+
+  --signal-rgb: 245, 158, 11;
+  --signal-hover-rgb: 251, 191, 36;
+  --signal-subtle-rgb: 55, 38, 20;
+
+  --brand-rgb: 245, 158, 11;
+  --brand-subtle-rgb: 55, 38, 20;
+  --brand-accent-rgb: 251, 191, 36;
+
+  --sage-rgb: 16, 185, 129;
+  --sage-subtle-rgb: 25, 50, 35;
+
+  --canvas: rgb(var(--canvas-rgb));
+  --surface: rgb(var(--surface-rgb));
+  --surface-dim: rgb(var(--surface-dim-rgb));
+  --surface-elevated: rgb(var(--surface-elevated-rgb));
+  --surface-subtle: rgb(var(--surface-subtle-rgb));
+  --surface-border: rgb(var(--surface-border-rgb));
+  --text-primary: rgb(var(--text-primary-rgb));
+  --text-secondary: rgb(var(--text-secondary-rgb));
+  --text-muted: rgb(var(--text-muted-rgb));
+  --background: var(--canvas);
+  --foreground: var(--text-primary);
 }
 
 html[data-theme="warm-brown"] .liquid-glass-stage {
@@ -613,6 +724,49 @@ html[data-theme="warm-brown"] .border-slate-200 { border-color: rgba(231, 229, 2
    ============================================================= */
 html[data-theme="cyber-teal"] {
   color-scheme: dark;
+  --canvas-rgb: 7, 23, 20;
+  --canvas-dark-rgb: 5, 17, 15;
+  --surface-rgb: 12, 36, 31;
+  --surface-dim-rgb: 9, 28, 24;
+  --surface-bright-rgb: 20, 54, 46;
+  --surface-subtle-rgb: 17, 47, 41;
+  --surface-elevated-rgb: 23, 62, 54;
+  --surface-overlay-rgb: 30, 78, 68;
+  --surface-muted-rgb: 16, 42, 36;
+  --surface-border-rgb: 30, 78, 68;
+  --surface-border-subtle-rgb: 20, 54, 47;
+  --surface-container-lowest-rgb: 7, 23, 20;
+  --surface-container-low-rgb: 9, 28, 24;
+  --surface-container-rgb: 12, 36, 31;
+  --surface-container-high-rgb: 20, 54, 46;
+  --surface-container-highest-rgb: 28, 74, 64;
+
+  --text-primary-rgb: 240, 253, 244;
+  --text-secondary-rgb: 187, 247, 208;
+  --text-muted-rgb: 110, 231, 183;
+
+  --signal-rgb: 16, 185, 129;
+  --signal-hover-rgb: 52, 211, 153;
+  --signal-subtle-rgb: 10, 48, 40;
+
+  --brand-rgb: 16, 185, 129;
+  --brand-subtle-rgb: 10, 48, 40;
+  --brand-accent-rgb: 52, 211, 153;
+
+  --sage-rgb: 16, 185, 129;
+  --sage-subtle-rgb: 10, 48, 40;
+
+  --canvas: rgb(var(--canvas-rgb));
+  --surface: rgb(var(--surface-rgb));
+  --surface-dim: rgb(var(--surface-dim-rgb));
+  --surface-elevated: rgb(var(--surface-elevated-rgb));
+  --surface-subtle: rgb(var(--surface-subtle-rgb));
+  --surface-border: rgb(var(--surface-border-rgb));
+  --text-primary: rgb(var(--text-primary-rgb));
+  --text-secondary: rgb(var(--text-secondary-rgb));
+  --text-muted: rgb(var(--text-muted-rgb));
+  --background: var(--canvas);
+  --foreground: var(--text-primary);
 }
 
 html[data-theme="cyber-teal"] .liquid-glass-stage {
@@ -743,6 +897,49 @@ html[data-theme="cyber-teal"] .border-slate-200 { border-color: rgba(52, 211, 15
    ============================================================= */
 html[data-theme="sunset-rose"] {
   color-scheme: dark;
+  --canvas-rgb: 20, 12, 30;
+  --canvas-dark-rgb: 15, 8, 23;
+  --surface-rgb: 30, 18, 44;
+  --surface-dim-rgb: 24, 14, 35;
+  --surface-bright-rgb: 44, 26, 64;
+  --surface-subtle-rgb: 38, 22, 56;
+  --surface-elevated-rgb: 50, 30, 74;
+  --surface-overlay-rgb: 64, 38, 94;
+  --surface-muted-rgb: 34, 20, 50;
+  --surface-border-rgb: 68, 40, 98;
+  --surface-border-subtle-rgb: 48, 28, 70;
+  --surface-container-lowest-rgb: 20, 12, 30;
+  --surface-container-low-rgb: 24, 14, 35;
+  --surface-container-rgb: 30, 18, 44;
+  --surface-container-high-rgb: 44, 26, 64;
+  --surface-container-highest-rgb: 58, 36, 84;
+
+  --text-primary-rgb: 253, 242, 248;
+  --text-secondary-rgb: 240, 171, 252;
+  --text-muted-rgb: 192, 132, 252;
+
+  --signal-rgb: 236, 72, 153;
+  --signal-hover-rgb: 244, 114, 182;
+  --signal-subtle-rgb: 50, 18, 55;
+
+  --brand-rgb: 236, 72, 153;
+  --brand-subtle-rgb: 50, 18, 55;
+  --brand-accent-rgb: 244, 114, 182;
+
+  --sage-rgb: 16, 185, 129;
+  --sage-subtle-rgb: 25, 45, 40;
+
+  --canvas: rgb(var(--canvas-rgb));
+  --surface: rgb(var(--surface-rgb));
+  --surface-dim: rgb(var(--surface-dim-rgb));
+  --surface-elevated: rgb(var(--surface-elevated-rgb));
+  --surface-subtle: rgb(var(--surface-subtle-rgb));
+  --surface-border: rgb(var(--surface-border-rgb));
+  --text-primary: rgb(var(--text-primary-rgb));
+  --text-secondary: rgb(var(--text-secondary-rgb));
+  --text-muted: rgb(var(--text-muted-rgb));
+  --background: var(--canvas);
+  --foreground: var(--text-primary);
 }
 
 html[data-theme="sunset-rose"] .liquid-glass-stage {

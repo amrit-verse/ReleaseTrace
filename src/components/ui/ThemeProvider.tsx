@@ -85,8 +85,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (saved && THEME_OPTIONS.some((o) => o.id === saved)) {
         setThemeState(saved);
         document.documentElement.setAttribute("data-theme", saved);
+        document.documentElement.classList.toggle("dark", saved !== "light");
       } else {
         document.documentElement.setAttribute("data-theme", "light");
+        document.documentElement.classList.remove("dark");
       }
     } catch {}
   }, []);
@@ -96,6 +98,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem("releasetrace-theme", newTheme);
       document.documentElement.setAttribute("data-theme", newTheme);
+      document.documentElement.classList.toggle("dark", newTheme !== "light");
     } catch {}
   };
 
