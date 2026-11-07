@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
+import { FirstTimeDeployerGuide } from "@/components/ui/FirstTimeDeployerGuide";
 import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
 
 type Assessment = {
@@ -218,6 +219,8 @@ export default function DashboardPage() {
           onClick: () => setIsSimulatorModalOpen(true),
         }}
       />
+
+      <FirstTimeDeployerGuide />
 
       {error && (
         <div role="status" className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">

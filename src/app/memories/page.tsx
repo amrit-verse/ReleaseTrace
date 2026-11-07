@@ -15,6 +15,8 @@ import { mockMemories } from "@/data/mockData";
 import { HindsightMemoryCard } from "@/components/ui/HindsightMemoryCard";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
+import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
 import { useToast } from "@/components/ui/ToastProvider";
 import { getActiveMemories, retainNewMemory, resetMemoriesToDefault } from "@/lib/memoryEngine";
 import {
@@ -33,6 +35,7 @@ export default function MemoryExplorerPage() {
   const [selectedSeverity, setSelectedSeverity] = useState<string>("ALL");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { success, info } = useToast();
+  const { setIsSimulatorModalOpen } = useDevOpsGuide();
 
   // New Memory Modal State
   const [newTitle, setNewTitle] = useState("");
@@ -169,6 +172,18 @@ export default function MemoryExplorerPage() {
             </motion.button>
           </div>
         }
+      />
+
+      <PlainEnglishCallout
+        title="What is Hindsight Memory and why do we need it?"
+        analogy="Think of Hindsight like an engineering team's collective immune system. When someone burns their hand on a hot stove (e.g. an unindexed table scan crashes production), Hindsight remembers that exact incident so future code reviews never let it happen again."
+        explanation="Standard CI tests only check if code compiles and unit tests pass. Hindsight stores semantic vector embeddings of real historical outages, root cause postmortems, and failed rollback attempts. When a new pull request is evaluated, Hindsight automatically retrieves matching past incidents."
+        whyItMatters="Organizations repeat the same operational mistakes every 6-12 months as engineers change teams. Hindsight turns painful postmortems into permanent, proactive safeguards."
+        keyTerms={["Vector Semantic Bank", "Postmortem Root Cause", "Precedent Matching", "SEV-1 Mitigation"]}
+        suggestedAction={{
+          label: "Test in Sandbox Simulator",
+          onClick: () => setIsSimulatorModalOpen(true),
+        }}
       />
 
       {/* Filter & Search Bar */}
