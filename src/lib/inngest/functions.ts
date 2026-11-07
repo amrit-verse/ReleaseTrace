@@ -22,38 +22,58 @@ export const processDeploymentWebhook = inngest.createFunction(
 
     // Step 1: Idempotently upsert deployment in database
     const deploymentRecord = await step.run("upsert-deployment-record", async () => {
-      try {
-        const existing = await prisma.deployment.findFirst({
-          where: {
-            projectId: deploymentEvent.projectId,
-            providerDeploymentId: deploymentEvent.eventId,
+      // Ensure project exists to satisfy foreign key relation
+      await prisma.project.upsert({
+        where: { id: deploymentEvent.projectId },
+        create: {
+          id: deploymentEvent.projectId,
+          name: deploymentEvent.projectName || "ReleaseTrace Project",
+          slug: deploymentEvent.projectId.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+          repository: deploymentEvent.evidence.repository || "amrit-verse/ReleaseTrace",
+          hindsightBankId: `rt-${deploymentEvent.projectId}`,
+          workspace: {
+            connectOrCreate: {
+              where: { slug: "default-workspace" },
+              create: {
+                id: "ws-default",
+                name: "Default Workspace",
+                slug: "default-workspace",
+              },
+            },
           },
-        });
+        },
+        update: {
+          name: deploymentEvent.projectName || undefined,
+        },
+      });
 
-        if (existing) {
-          return { id: existing.id, isExisting: true };
-        }
+      const existing = await prisma.deployment.findFirst({
+        where: {
+          projectId: deploymentEvent.projectId,
+          providerDeploymentId: deploymentEvent.eventId,
+        },
+      });
 
-        const created = await prisma.deployment.create({
-          data: {
-            projectId: deploymentEvent.projectId,
-            provider: deploymentEvent.provider,
-            providerDeploymentId: deploymentEvent.eventId,
-            commitSha: deploymentEvent.evidence.commitSha,
-            branch: deploymentEvent.evidence.branch,
-            environment: deploymentEvent.evidence.environment,
-            status: "BUILDING",
-            evidence: deploymentEvent.evidence as unknown as object,
-            url: correlatedVercelUrl || deploymentEvent.evidence.vercelDeploymentUrl,
-            startedAt: new Date(deploymentEvent.timestamp),
-          },
-        });
-
-        return { id: created.id, isExisting: false };
-      } catch (err) {
-        console.warn("DB offline or project not found; generating fallback ID:", err);
-        return { id: `dep-${Date.now()}`, isExisting: false };
+      if (existing) {
+        return { id: existing.id, isExisting: true };
       }
+
+      const created = await prisma.deployment.create({
+        data: {
+          projectId: deploymentEvent.projectId,
+          provider: deploymentEvent.provider,
+          providerDeploymentId: deploymentEvent.eventId,
+          commitSha: deploymentEvent.evidence.commitSha,
+          branch: deploymentEvent.evidence.branch,
+          environment: deploymentEvent.evidence.environment,
+          status: "BUILDING",
+          evidence: deploymentEvent.evidence as unknown as object,
+          url: correlatedVercelUrl || deploymentEvent.evidence.vercelDeploymentUrl,
+          startedAt: new Date(deploymentEvent.timestamp),
+        },
+      });
+
+      return { id: created.id, isExisting: false };
     });
 
     // Step 2: Map to intelligence deployment context and run assessment
@@ -65,6 +85,14 @@ export const processDeploymentWebhook = inngest.createFunction(
         changedFiles.some((f: string) => f.includes("migration") || f.includes("schema.prisma"))
       );
 
+      const metadataEnv = (deploymentEvent.metadata?.environment || {}) as Record<string, any>;
+      const evidenceEnv = (deploymentEvent.evidence as any)?.environmentContext || {};
+      const gitDiff = (deploymentEvent.evidence as any)?.gitDiffSummary || {};
+
+      // Preserve evidence provenance without fabricating unobserved estimates
+      const additions = (deploymentEvent.evidence as any)?.additions ?? gitDiff.additions ?? 0;
+      const deletions = (deploymentEvent.evidence as any)?.deletions ?? gitDiff.deletions ?? 0;
+
       const context: DeploymentContext = {
         deploymentId: deploymentRecord.id,
         projectId: deploymentEvent.projectId,
@@ -75,74 +103,85 @@ export const processDeploymentWebhook = inngest.createFunction(
         targetEnvironment: deploymentEvent.evidence.environment === "production" ? "production" : "staging",
         gitDiffSummary: {
           filesChanged: changedFiles,
-          additions: 120,
-          deletions: 15,
+          additions,
+          deletions,
           hasDatabaseMigrations: hasMigrations,
           migrationDetails: deploymentEvent.evidence.migrationEvidence?.migrationNames?.join(", "),
         },
         environment: {
-          runtime: deploymentEvent.evidence.runtimeVersion,
+          runtime: deploymentEvent.evidence.runtimeVersion || metadataEnv.runtime || evidenceEnv.runtime || "unknown",
           database: {
-            type: "postgresql",
-            version: "16",
-            poolSize: 15,
+            type: metadataEnv.databaseType || evidenceEnv.databaseType || "postgresql",
+            version: metadataEnv.databaseVersion || evidenceEnv.databaseVersion || "unknown",
+            poolSize: metadataEnv.poolSize ?? evidenceEnv.poolSize ?? undefined,
           },
           infrastructure: {
-            provider: "vercel",
-            region: "iad1",
-            replicas: 1,
+            provider: metadataEnv.provider || evidenceEnv.provider || (deploymentEvent.provider === "vercel" ? "vercel" : "github_actions"),
+            region: metadataEnv.region || evidenceEnv.region || "unknown",
+            replicas: metadataEnv.replicas ?? evidenceEnv.replicas ?? 1,
           },
-          featureFlags: {},
-          envVariables: {},
-          dependencies: {
-            next: deploymentEvent.evidence.framework,
-            "@prisma/client": "6.4.1",
-          },
+          featureFlags: metadataEnv.featureFlags || evidenceEnv.featureFlags || {},
+          envVariables: metadataEnv.envVariables || evidenceEnv.envVariables || {},
+          dependencies: metadataEnv.dependencies || evidenceEnv.dependencies || {},
         },
       };
 
       return await intelligenceEngine.assessDeployment(context);
     });
 
-    // Step 3: Persist Assessment and Memory References in PostgreSQL
+    // Step 3: Persist Assessment and Memory References in PostgreSQL (Never swallow DB failures)
     await step.run("persist-assessment-record", async () => {
-      try {
-        await prisma.assessment.create({
+      const assessmentRecord = await prisma.assessment.upsert({
+        where: { deploymentId: deploymentRecord.id },
+        create: {
+          deploymentId: deploymentRecord.id,
+          overallCategory: assessmentResult.overallRisk,
+          summary: assessmentResult.currentEvidenceSummary.criticalSignals[0] || assessmentResult.recommendations[0]?.action || "Deployment risk assessed.",
+          findings: assessmentResult.ruleViolations as unknown as object,
+          environmentComparison: (assessmentResult.environmentComparison || {}) as unknown as object,
+          groundedExplanation: assessmentResult.recommendations.map((r) => r.action).join(" | "),
+          recommendedAction: assessmentResult.overallRisk === "CRITICAL" ? "ABORT" : "PROCEED",
+          checklist: assessmentResult.recommendations.map((r) => ({
+            item: r.action,
+            completed: false,
+            required: r.priority === "IMMEDIATE",
+          })),
+          llmModel: assessmentResult.provenance.llmModel,
+          llmDurationMs: assessmentResult.provenance.durationMs || 250,
+          validatedWithZod: true,
+          fallbackUsed: Boolean(assessmentResult.provenance.isFallbackUsed),
+        },
+        update: {
+          overallCategory: assessmentResult.overallRisk,
+          summary: assessmentResult.currentEvidenceSummary.criticalSignals[0] || assessmentResult.recommendations[0]?.action || "Deployment risk assessed.",
+          findings: assessmentResult.ruleViolations as unknown as object,
+          environmentComparison: (assessmentResult.environmentComparison || {}) as unknown as object,
+          groundedExplanation: assessmentResult.recommendations.map((r) => r.action).join(" | "),
+          recommendedAction: assessmentResult.overallRisk === "CRITICAL" ? "ABORT" : "PROCEED",
+          checklist: assessmentResult.recommendations.map((r) => ({
+            item: r.action,
+            completed: false,
+            required: r.priority === "IMMEDIATE",
+          })),
+          llmModel: assessmentResult.provenance.llmModel,
+          llmDurationMs: assessmentResult.provenance.durationMs || 250,
+          validatedWithZod: true,
+          fallbackUsed: Boolean(assessmentResult.provenance.isFallbackUsed),
+        },
+      });
+
+      // Track memory references linked to the created assessment
+      for (const mem of assessmentResult.recalledMemories) {
+        await prisma.memoryReference.create({
           data: {
-            deploymentId: deploymentRecord.id,
-            overallCategory: assessmentResult.overallRisk,
-            summary: assessmentResult.currentEvidenceSummary.criticalSignals[0] || "Deployment risk assessed.",
-            findings: assessmentResult.ruleViolations as unknown as object,
-            environmentComparison: (assessmentResult.environmentComparison || {}) as unknown as object,
-            groundedExplanation: assessmentResult.recommendations.map((r) => r.action).join(" | "),
-            recommendedAction: assessmentResult.overallRisk === "CRITICAL" ? "ABORT" : "PROCEED",
-            checklist: assessmentResult.recommendations.map((r) => ({
-              item: r.action,
-              completed: false,
-              required: r.priority === "IMMEDIATE",
-            })),
-            llmModel: assessmentResult.provenance.llmModel,
-            llmDurationMs: 380,
-            validatedWithZod: true,
-            fallbackUsed: false,
+            assessmentId: assessmentRecord.id,
+            hindsightBankId: assessmentResult.provenance.hindsightBankId,
+            externalMemoryId: mem.memoryId,
+            relevanceScore: mem.relevanceScore,
+            memoryType: "VERIFIED_EXPERIENCE",
+            snippet: `${mem.confirmedRootCause} -> ${mem.verifiedMitigation}`,
           },
         });
-
-        // Track memory references
-        for (const mem of assessmentResult.recalledMemories) {
-          await prisma.memoryReference.create({
-            data: {
-              assessmentId: deploymentRecord.id,
-              hindsightBankId: assessmentResult.provenance.hindsightBankId,
-              externalMemoryId: mem.memoryId,
-              relevanceScore: mem.relevanceScore,
-              memoryType: "VERIFIED_EXPERIENCE",
-              snippet: `${mem.confirmedRootCause} -> ${mem.verifiedMitigation}`,
-            },
-          });
-        }
-      } catch (err) {
-        console.warn("Skipping DB assessment persistence (offline DB mode):", err);
       }
     });
 
@@ -179,12 +218,37 @@ export const processVerifiedResolution = inngest.createFunction(
         return { retained: false, reason: "Engineer opted out of Hindsight memory retention" };
       }
 
+      // Resolve real project ID and deployment context
+      let resolvedProjectId = data.projectId;
+      let deploymentEnv: any = null;
+      let deploymentService = "ReleaseTrace Service";
+
+      if (data.deploymentId) {
+        try {
+          const dep = await prisma.deployment.findUnique({
+            where: { id: data.deploymentId },
+            include: { project: true },
+          });
+          if (dep) {
+            resolvedProjectId = resolvedProjectId || dep.projectId;
+            deploymentService = dep.project?.name || deploymentService;
+            const ev = dep.evidence as any;
+            deploymentEnv = ev?.environmentContext || ev?.environment;
+          }
+        } catch {
+          // Continue if DB unavailable
+        }
+      }
+
+      resolvedProjectId = resolvedProjectId || process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
+      const canonicalDocId = `case-${resolvedProjectId}-${data.deploymentId}`;
+
       const retentionWorkflow = intelligenceEngine.getRetentionWorkflow();
       const confirmedCase: VerifiedEngineeringMemoryInput = {
-        id: `case-${Date.now()}`,
-        projectId: "proj_01",
+        id: canonicalDocId,
+        projectId: resolvedProjectId,
         deploymentId: data.deploymentId,
-        service: "ReleaseTrace Service",
+        service: deploymentService,
         createdAt: new Date().toISOString(),
         failureContext: {
           failureType: "UNSPECIFIED_FAILURE",
@@ -193,12 +257,20 @@ export const processVerifiedResolution = inngest.createFunction(
           logsSample: [data.preventionGuideline || ""],
         },
         environment: {
-          runtime: "nodejs-22",
-          database: { type: "postgresql", version: "16" },
-          infrastructure: { provider: "vercel", region: "iad1", replicas: 1 },
-          featureFlags: {},
-          envVariables: {},
-          dependencies: {},
+          runtime: deploymentEnv?.runtime || "unknown",
+          database: {
+            type: deploymentEnv?.database?.type || "postgresql",
+            version: deploymentEnv?.database?.version || "unknown",
+            poolSize: deploymentEnv?.database?.poolSize ?? undefined,
+          },
+          infrastructure: {
+            provider: deploymentEnv?.infrastructure?.provider || "vercel",
+            region: deploymentEnv?.infrastructure?.region || "unknown",
+            replicas: deploymentEnv?.infrastructure?.replicas ?? 1,
+          },
+          featureFlags: deploymentEnv?.featureFlags || {},
+          envVariables: deploymentEnv?.envVariables || {},
+          dependencies: deploymentEnv?.dependencies || {},
         },
         confirmedRootCause: data.confirmedRootCause || "Root cause verified by lead engineer",
         verifiedMitigation: data.appliedFix || "Fix verified in production",
@@ -222,25 +294,42 @@ export const processVerifiedResolution = inngest.createFunction(
       };
     });
 
-    // Step 2: Persist Resolution Record in PostgreSQL
+    // Step 2: Persist Resolution Record in PostgreSQL (Never swallow DB failures)
     await step.run("persist-resolution-record", async () => {
-      try {
-        await prisma.resolution.create({
-          data: {
-            assessmentId: data.assessmentId,
+      let assessmentId = data.assessmentId;
+      if (!assessmentId && data.deploymentId) {
+        const ass = await prisma.assessment.findUnique({
+          where: { deploymentId: data.deploymentId },
+        });
+        if (ass) assessmentId = ass.id;
+      }
+
+      if (assessmentId && data.deploymentId) {
+        await prisma.resolution.upsert({
+          where: { deploymentId: data.deploymentId },
+          create: {
+            assessmentId,
             deploymentId: data.deploymentId,
-            engineerName: data.engineerName,
-            confirmedRootCause: data.confirmedRootCause,
-            appliedFix: data.appliedFix,
-            preventionGuideline: data.preventionGuideline,
-            outcome: data.outcome,
+            engineerName: data.engineerName || "Lead Engineer",
+            confirmedRootCause: data.confirmedRootCause || "Root cause verified by lead engineer",
+            appliedFix: data.appliedFix || "Mitigation applied and verified",
+            preventionGuideline: data.preventionGuideline || "Standard prevention procedure verified",
+            outcome: data.outcome || "resolved",
             retainedToHindsight: Boolean(retainOutcome.retained),
             hindsightMemoryId: "documentId" in retainOutcome ? (retainOutcome.documentId as string) : null,
             retentionTags: data.tags || [],
           },
+          update: {
+            engineerName: data.engineerName || undefined,
+            confirmedRootCause: data.confirmedRootCause || undefined,
+            appliedFix: data.appliedFix || undefined,
+            preventionGuideline: data.preventionGuideline || undefined,
+            outcome: data.outcome || undefined,
+            retainedToHindsight: Boolean(retainOutcome.retained),
+            hindsightMemoryId: "documentId" in retainOutcome ? (retainOutcome.documentId as string) : undefined,
+            retentionTags: data.tags || undefined,
+          },
         });
-      } catch (err) {
-        console.warn("DB resolution persistence skipped (offline DB mode):", err);
       }
     });
 

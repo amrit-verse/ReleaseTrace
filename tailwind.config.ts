@@ -112,8 +112,8 @@ const config: Config = {
         "border-inset": "inset 0 1px 0 0 rgba(255, 255, 255, 0.6)",
       },
       fontFamily: {
-        sans: ["Inter", "var(--font-geist-sans)", "system-ui", "-apple-system", "sans-serif"],
-        mono: ["JetBrains Mono", "var(--font-geist-mono)", "monospace"],
+        sans: ["var(--font-sans)", "Inter", "system-ui", "-apple-system", "sans-serif"],
+        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
       },
     },
   },

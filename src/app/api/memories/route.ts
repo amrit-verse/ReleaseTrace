@@ -9,11 +9,8 @@ import {
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const projectId =
-      searchParams.get("projectId") ||
-      searchParams.get("service") ||
-      "auth-gateway";
-    const query = searchParams.get("q") || "deployment failure migration incident";
+    const projectId = process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
+    const query = (searchParams.get("q") || "deployment failure migration incident").trim().slice(0, 240);
 
     const engine = new ReleaseTraceIntelligenceEngine();
     const bankManager = engine.getBankManager();
@@ -63,11 +60,12 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const title = body.title;
-    const service = body.service;
     const rootCause = body.confirmedRootCause || body.rootCause;
     const resolution = body.verifiedMitigation || body.resolution;
-    const projectId = body.projectId || service || "auth-gateway";
-    const deploymentId = body.deploymentId || `dep-${service}-verified`;
+    const canonicalProjectId = process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
+    const projectId = body.projectId || canonicalProjectId;
+    const service = body.service || projectId;
+    const deploymentId = body.deploymentId || `dep-${projectId}-verified`;
 
     if (!title || !service || !rootCause || !resolution) {
       return NextResponse.json(
@@ -79,10 +77,39 @@ export async function POST(request: Request) {
       );
     }
 
-    // Authenticated engineer confirmation validation
-    const authHeader = request.headers.get("x-engineer-email") || request.headers.get("x-authenticated-user");
-    const clientConfirmation = body.confirmation;
+    // 1. Rigorous Authorization Check
+    // Never treat spoofable x-engineer-email or client confirmation as authenticated identity.
+    const authHeader = request.headers.get("authorization") || "";
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+    const expectedSecret =
+      process.env.RELEASETRACE_AUTH_SECRET ||
+      process.env.RELEASETRACE_ENGINEER_KEY ||
+      process.env.RELEASETRACE_WEBHOOK_SECRET;
 
+    const isBearerValid = Boolean(
+      bearerToken && expectedSecret && bearerToken === expectedSecret
+    );
+
+    const isDemoMode =
+      body.demoMode === true ||
+      request.headers.get("x-releasetrace-demo-mode") === "true";
+
+    // Reject unauthenticated requests attempting to write to production banks
+    if (!isBearerValid && !isDemoMode) {
+      return NextResponse.json(
+        {
+          error:
+            "Unauthorized: Verified engineer authorization required to commit memories to production bank rt-" +
+            projectId +
+            ". Provide a valid 'Authorization: Bearer <token>' header or enable restricted demo mode (x-releasetrace-demo-mode: true).",
+          authenticatedIdentity: false,
+          rejected: true,
+        },
+        { status: 401 }
+      );
+    }
+
+    const clientConfirmation = body.confirmation;
     if (!clientConfirmation || clientConfirmation.isConfirmed !== true) {
       return NextResponse.json(
         {
@@ -93,28 +120,35 @@ export async function POST(request: Request) {
       );
     }
 
-    const confirmedBy =
-      authHeader ||
-      clientConfirmation.confirmedBy ||
-      "unauthenticated-demo-operator";
+    // If authenticated with bearer token, identity is verified
+    const isRealAuth = isBearerValid;
+    const confirmedBy = isRealAuth
+      ? clientConfirmation.confirmedBy || "authorized-lead-engineer"
+      : "DEMO_OPERATOR_UNAUTHENTICATED";
 
-    // Where real authentication does not exist, explicitly label as demo workspace confirmation
-    const isRealAuth = Boolean(authHeader);
     const confirmationNotes = isRealAuth
-      ? clientConfirmation.notes || "Authenticated engineer verification"
-      : "DEMO_WORKSPACE_APPROVAL: Validated in test/demo workspace; not production-SSO verified.";
+      ? clientConfirmation.notes || "Cryptographically authorized engineer verification"
+      : "DEMO_WORKSPACE_APPROVAL: Validated in isolated demo mode; not an authenticated production identity.";
+
+    // Isolate demo precedents into a dedicated demo bank
+    const targetProjectId = isRealAuth ? projectId : `demo-${projectId}`;
 
     // Construct deterministic memory ID
     const deterministicMemoryId =
       body.id ||
-      `mem-${projectId}-${service}-${title
+      `mem-${targetProjectId}-${service}-${title
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "-")
         .slice(0, 30)}`;
 
+    const tags = Array.isArray(body.tags) ? [...body.tags] : [service, "verified-resolution", "releasetrace"];
+    if (!isRealAuth && !tags.includes("demo")) {
+      tags.push("demo", "synthetic-precedent");
+    }
+
     const memoryInput: VerifiedEngineeringMemoryInput = {
       id: deterministicMemoryId,
-      projectId,
+      projectId: targetProjectId,
       deploymentId,
       service,
       createdAt: body.createdAt || new Date().toISOString(),
@@ -170,6 +204,16 @@ export async function POST(request: Request) {
     const retentionWorkflow = engine.getRetentionWorkflow();
     const retentionResult = await retentionWorkflow.retainVerifiedExperience(memoryInput);
 
+    if (!retentionResult.success) {
+      return NextResponse.json(
+        {
+          error: "Retention Failed: Live Hindsight rejected or failed to index memory",
+          details: "Hindsight retention did not report success",
+        },
+        { status: 502 }
+      );
+    }
+
     const adapter = engine.getHindsightAdapter();
     const isMock = adapter.isMock();
     const retentionStatus = isMock ? "MOCK_RETAINED" : "LIVE_RETAINED";
@@ -178,7 +222,9 @@ export async function POST(request: Request) {
       {
         message: isMock
           ? "Memory verified and indexed in local mock bank (Mock transport active)"
-          : "Memory permanently committed to Hindsight Cloud cluster",
+          : isRealAuth
+          ? "Memory permanently committed to Hindsight Cloud cluster"
+          : "Demo memory indexed in isolated demo bank",
         bankId: retentionResult.bankId,
         documentId: retentionResult.documentId,
         memoryId: retentionResult.memoryId,
@@ -186,6 +232,8 @@ export async function POST(request: Request) {
         isMock,
         source: isMock ? "HINDSIGHT_MOCK_TRANSPORT" : "HINDSIGHT_CLOUD",
         authenticatedIdentity: isRealAuth,
+        identityType: isRealAuth ? "AUTHORIZED_ENGINEER" : "UNAUTHENTICATED_DEMO_APPROVAL",
+        isProductionVerified: isRealAuth,
         retentionResult,
       },
       { status: 201 }
@@ -204,10 +252,11 @@ export async function POST(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+    const canonicalProjectId = process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
     const projectId =
       searchParams.get("projectId") ||
       searchParams.get("service") ||
-      "auth-gateway";
+      canonicalProjectId;
     const action = searchParams.get("action") || "reset_fixture";
     const confirmParam = searchParams.get("confirm");
 

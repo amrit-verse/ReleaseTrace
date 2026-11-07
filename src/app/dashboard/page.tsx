@@ -1,503 +1,398 @@
 "use client";
 
-import React, { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { mockDeployments, mockRecurringFailureCategories } from "@/data/mockData";
-import { fadeInVariants, staggerContainer } from "@/lib/motion";
+import {
+  Activity,
+  ArrowUpRight,
+  BrainCircuit,
+  CheckCircle2,
+  CircleAlert,
+  Clock3,
+  Database,
+  GitCommit,
+  RefreshCw,
+  ShieldAlert,
+  ShieldCheck,
+  WifiOff,
+  Zap,
+} from "lucide-react";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { PlainEnglishCallout } from "@/components/ui/PlainEnglishCallout";
+import { useDevOpsGuide } from "@/context/DevOpsGuideContext";
+
+type Assessment = {
+  overallCategory?: string | null;
+  summary?: string | null;
+  groundedExplanation?: string | null;
+  recommendedAction?: string | null;
+  fallbackUsed?: boolean;
+};
+
+type DeploymentRow = {
+  id: string;
+  providerDeploymentId?: string;
+  commitSha?: string;
+  branch?: string;
+  environment?: string;
+  status?: string;
+  url?: string | null;
+  createdAt?: string;
+  startedAt?: string;
+  assessment?: Assessment | null;
+};
+
+type DashboardStats = {
+  projectId: string;
+  bankId: string;
+  totalDeployments: number;
+  activeAssessments: number;
+  criticalBlockedCount: number;
+  memoryDocumentCount: number;
+  deterministicRuleCount: number;
+  latestDeployments: DeploymentRow[];
+  databaseStatus: "CONNECTED" | "UNAVAILABLE";
+  hindsightStatus: "CONNECTED" | "MOCK_MODE" | "UNAVAILABLE";
+};
+
+function formatDate(value?: string) {
+  if (!value) return "Time unavailable";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Time unavailable";
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function label(value?: string | null) {
+  if (!value) return "Unknown";
+  return value.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function riskStyle(value?: string | null) {
+  switch ((value || "").toUpperCase()) {
+    case "CRITICAL":
+      return "border-red-200 bg-red-50 text-red-800";
+    case "HIGH":
+    case "HIGH_RISK":
+      return "border-amber-200 bg-amber-50 text-amber-800";
+    case "ELEVATED":
+      return "border-orange-200 bg-orange-50 text-orange-800";
+    case "NOMINAL":
+    case "VERIFIED":
+      return "border-emerald-200 bg-emerald-50 text-emerald-800";
+    default:
+      return "border-surface-border bg-surface-subtle text-text-secondary";
+  }
+}
+
+function StatePill({ value }: { value?: string | null }) {
+  return (
+    <span className="inline-flex items-center rounded-full border border-surface-border bg-surface-subtle px-2.5 py-1 text-[10px] font-mono font-semibold uppercase tracking-wide text-text-secondary">
+      {label(value)}
+    </span>
+  );
+}
+
+function MetricCard({
+  title,
+  value,
+  detail,
+  icon: Icon,
+  tone = "text-signal",
+}: {
+  title: string;
+  value: number | string;
+  detail: string;
+  icon: typeof Activity;
+  tone?: string;
+}) {
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex min-h-36 flex-col justify-between rounded-xl border border-surface-border bg-surface p-4 shadow-panel-subtle"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+          {title}
+        </span>
+        <Icon className={`h-[18px] w-[18px] ${tone}`} />
+      </div>
+      <div>
+        <div className="text-3xl font-bold tracking-tight text-text-primary tabular-nums">{value}</div>
+        <p className="mt-1 text-xs leading-relaxed text-text-muted">{detail}</p>
+      </div>
+    </motion.section>
+  );
+}
 
 export default function DashboardPage() {
-  const [filterEnvironment, setFilterEnvironment] = useState<string>("ALL");
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { setIsSimulatorModalOpen } = useDevOpsGuide();
 
-  const totalMonitoredDeployments = mockDeployments.length;
-  const criticalBlockedCount = mockDeployments.filter(
-    (d) => d.status === "blocked" || d.riskClassification === "CRITICAL"
-  ).length;
+  const refresh = useCallback(async () => {
+    setRefreshing(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/dashboard/stats", { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || `Dashboard request failed (HTTP ${response.status})`);
+      }
+      setStats(payload as DashboardStats);
+      if (payload.databaseStatus === "UNAVAILABLE") {
+        setError("The database could not be reached. Counts and release history may be incomplete.");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load dashboard data.");
+      setStats(null);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
-  const filteredDeployments =
-    filterEnvironment === "ALL"
-      ? mockDeployments
-      : mockDeployments.filter(
-          (d) => d.environment.toLowerCase() === filterEnvironment.toLowerCase()
-        );
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const databaseUnavailable = stats?.databaseStatus === "UNAVAILABLE";
+  const hindsightUnavailable = stats?.hindsightStatus === "UNAVAILABLE";
+  const dataLabel = !stats
+    ? "Awaiting data"
+    : databaseUnavailable
+      ? "Neon unavailable"
+      : stats.hindsightStatus === "MOCK_MODE"
+        ? "Neon live · Hindsight mock"
+        : hindsightUnavailable
+          ? "Neon live · Hindsight unavailable"
+          : "Cloud data";
 
   return (
-    <motion.div
-      variants={staggerContainer}
-      initial="hidden"
-      animate="visible"
-      className="p-4 lg:p-6 space-y-6 max-w-7xl mx-auto w-full"
-    >
-      {/* Page Header & Quick Controls */}
-      <section className="flex flex-col gap-2 pt-1">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
-            <span className="font-mono text-[10px] uppercase tracking-wider font-bold text-slate-500">
-              Liquid Telemetry Engine
+    <div className="mx-auto w-full max-w-7xl space-y-6 p-4 lg:p-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <PageHeader
+          title="Release operations"
+          subtitle="A project-scoped view of deployment events, deterministic checks and historical memory."
+          badge={
+            <span className="rounded-full border border-surface-border bg-surface px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-wide text-text-secondary">
+              {dataLabel}
             </span>
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full liquid-glass-pill border-emerald-300 text-emerald-800 bg-emerald-50/70 shadow-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-            <span className="font-mono text-[10px] uppercase tracking-wider font-bold">
-              Engine Active
-            </span>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <h1 className="text-[26px] lg:text-[28px] font-extrabold text-slate-900 tracking-tight leading-tight">
-            Release Operations Overview
-          </h1>
-          <p className="text-[13px] text-slate-600 leading-snug">
-            Deterministic pre-flight risk classification, Prisma migration analysis, and Hindsight incident recall.
-          </p>
-        </div>
-
-        {/* Quick Action Pill Group */}
-        <div className="flex items-center gap-2.5 mt-1 overflow-x-auto no-scrollbar pb-1">
-          <Link
-            href="/learning-lab"
-            className="flex items-center gap-2 px-4 py-2 rounded-full btn-catchy-primary active:scale-95 transition-all flex-shrink-0"
+          }
+        />
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsSimulatorModalOpen(true)}
+            className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-lg border border-signal/40 bg-signal/10 px-3 py-2 text-xs font-semibold text-signal shadow-panel-subtle transition hover:bg-signal/20"
           >
-            <span className="material-symbols-outlined text-[17px] text-amber-300">auto_awesome</span>
-            <span className="text-[12px] font-bold text-white">Interactive Learning Lab</span>
-          </Link>
-          <Link
-            href="/deployments"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full liquid-glass-pill text-slate-700 hover:text-slate-900 active:scale-95 transition-all flex-shrink-0"
+            <Zap className="h-3.5 w-3.5" />
+            <span>Test Sandbox</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => void refresh()}
+            disabled={loading || refreshing}
+            className="inline-flex min-h-10 items-center justify-center gap-2 self-start rounded-lg border border-surface-border bg-surface px-3 py-2 text-xs font-semibold text-text-secondary shadow-panel-subtle transition hover:bg-surface-subtle disabled:cursor-not-allowed disabled:opacity-50 sm:self-auto"
           >
-            <span className="material-symbols-outlined text-[16px] text-slate-600">rocket_launch</span>
-            <span className="text-[12px] font-semibold">Deployment Register</span>
-            <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
-          </Link>
-          <Link
-            href="/memories"
-            className="flex items-center gap-1.5 px-4 py-2 rounded-full liquid-glass-pill text-slate-700 hover:text-slate-900 active:scale-95 transition-all flex-shrink-0"
-          >
-            <span className="material-symbols-outlined text-[16px] text-primary">psychology</span>
-            <span className="text-[12px] font-semibold">Memory Bank</span>
-          </Link>
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh data
+          </button>
         </div>
-      </section>
+      </div>
 
-      {/* 2x2 Telemetry Stat Cards Grid with Liquid Glass Refraction */}
-      <section aria-label="Core Metrics" className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
-        {/* Stat 1: Active Runs */}
-        <motion.div
-          variants={fadeInVariants}
-          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card shadow-sm"
-        >
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-wider">Active Runs</span>
-            <div className="w-8 h-8 rounded-xl liquid-glass-pill bg-sky-50/80 border-sky-200 flex items-center justify-center text-sky-600 shadow-sm">
-              <span className="material-symbols-outlined text-[17px]">hub</span>
-            </div>
-          </div>
-          <div className="my-2 flex items-baseline gap-2">
-            <span className="text-[30px] font-extrabold text-slate-900 tracking-tight">{totalMonitoredDeployments}</span>
-            <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50/90 border border-emerald-300 px-2 py-0.5 rounded-full uppercase shadow-xs">
-              live
-            </span>
-          </div>
-          <p className="font-mono text-[10px] text-slate-500 leading-tight truncate">
-            Vercel &amp; Neon targets correlated
-          </p>
-        </motion.div>
+      <PlainEnglishCallout
+        title="What is ReleaseTrace and why does it exist?"
+        analogy="Think of ReleaseTrace like an automated airport flight safety checker for your code before it deploys to live users. Instead of hoping a database change doesn't crash your servers at 3 AM, ReleaseTrace inspects past incidents and database locks in seconds."
+        explanation="Every time a pull request is created or code is pushed, ReleaseTrace extracts Git diffs, inspects Prisma schema migrations for exclusive table locks, compares staging vs production configuration, and queries Vectorize Hindsight memory to see if this pattern has ever crashed production before."
+        whyItMatters="Catching a database deadlock or connection pool starvation in CI costs $0. Fixing it after production goes down costs hours of downtime, customer loss, and emergency stress."
+        keyTerms={["Pre-Flight CI Gate", "Prisma Migration & Schema Lock", "Connection Pool Saturation", "Hindsight Memory Bank"]}
+        suggestedAction={{
+          label: "Test a simulated release",
+          onClick: () => setIsSimulatorModalOpen(true),
+        }}
+      />
 
-        {/* Stat 2: Interceptions */}
-        <motion.div
-          variants={fadeInVariants}
-          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card border-rose-300/80 bg-rose-50/40 shadow-sm"
-        >
-          <div className="flex items-center justify-between text-rose-700">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-wider">Interceptions</span>
-            <div className="w-8 h-8 rounded-xl liquid-glass-pill border-rose-200 bg-rose-50 flex items-center justify-center text-rose-600 shadow-sm">
-              <span className="material-symbols-outlined text-[17px]">gpp_bad</span>
-            </div>
-          </div>
-          <div className="my-2 flex items-baseline gap-2">
-            <span className="text-[30px] font-extrabold text-rose-600 tracking-tight">{criticalBlockedCount}</span>
-            <span className="font-mono text-[10px] font-bold text-rose-700 bg-rose-50/90 border border-rose-300 px-2 py-0.5 rounded-full uppercase shadow-xs">
-              Gate Block
-            </span>
-          </div>
-          <p className="font-mono text-[10px] text-slate-500 leading-tight truncate">
-            1 Critical • Pre-flight CI Gate
-          </p>
-        </motion.div>
-
-        {/* Stat 3: Retained Memories */}
-        <motion.div
-          variants={fadeInVariants}
-          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card shadow-sm"
-        >
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-wider">Retained Memories</span>
-            <div className="w-8 h-8 rounded-xl liquid-glass-pill bg-indigo-50/80 border-indigo-200 flex items-center justify-center text-indigo-600 shadow-sm">
-              <span className="material-symbols-outlined text-[17px]">psychology</span>
-            </div>
-          </div>
-          <div className="my-2 flex items-baseline gap-2">
-            <span className="text-[30px] font-extrabold text-slate-900 tracking-tight">5</span>
-            <span className="font-mono text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded-full shadow-xs">
-              100%
-            </span>
-          </div>
-          <p className="font-mono text-[10px] text-slate-500 leading-tight truncate">
-            Verified Hindsight memory bank
-          </p>
-        </motion.div>
-
-        {/* Stat 4: Rule Enforcement */}
-        <motion.div
-          variants={fadeInVariants}
-          className="flex flex-col justify-between p-4 rounded-2xl liquid-glass-card shadow-sm"
-        >
-          <div className="flex items-center justify-between text-slate-500">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-wider">Rule Enforcement</span>
-            <div className="w-8 h-8 rounded-xl liquid-glass-pill bg-emerald-50/80 border-emerald-200 flex items-center justify-center text-emerald-600 shadow-sm">
-              <span className="material-symbols-outlined text-[17px]">shield</span>
-            </div>
-          </div>
-          <div className="my-2 flex items-baseline gap-2">
-            <span className="text-[30px] font-extrabold text-slate-900 tracking-tight">8</span>
-            <span className="font-mono text-[10px] font-bold text-emerald-700 bg-emerald-50/90 border border-emerald-300 px-2 py-0.5 rounded-full uppercase shadow-xs">
-              Rules
-            </span>
-          </div>
-          <p className="font-mono text-[10px] text-slate-500 leading-tight truncate">
-            Deterministic pre-flight checks
-          </p>
-        </motion.div>
-      </section>
-
-      {/* CRITICAL INTERCEPTION CARD HERO CALLOUT (Liquid Glass) */}
-      <motion.section
-        variants={fadeInVariants}
-        className="flex flex-col rounded-2xl liquid-glass-critical p-5 relative overflow-hidden"
-      >
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-rose-500 to-red-600"></div>
-        {/* Top banner strip */}
-        <div className="flex items-start justify-between gap-2 mb-2 pt-0.5">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="relative flex h-3 w-3 flex-shrink-0">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600 shadow-md"></span>
-            </span>
-            <span className="font-mono text-[11px] font-bold text-red-700 tracking-wider uppercase truncate">
-              Critical Pre-flight Interception
-            </span>
-          </div>
-          <span className="px-2.5 py-0.5 rounded-full liquid-glass-pill border-red-300 font-mono text-[11px] font-bold text-slate-800 flex-shrink-0">
-            auth-gateway
-          </span>
-        </div>
-
-        {/* Incident Title */}
-        <h2 className="text-[16px] font-bold text-slate-900 leading-snug tracking-tight mb-3">
-          feat(auth): add passkey biometric verification and session metadata table migration
-        </h2>
-
-        {/* Score metric + CTA Bar (Glass Pill Bar) */}
-        <div className="flex items-center justify-between gap-3 p-3 rounded-xl liquid-glass-subtile mb-3">
-          <div className="flex flex-col">
-            <span className="font-mono text-[10px] uppercase font-bold text-slate-500">Risk Score</span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-[22px] font-extrabold text-red-600">92</span>
-              <span className="font-mono text-[11px] text-slate-500 font-medium">/ 100</span>
-            </div>
-          </div>
-          <Link
-            href="/deployments/dep-prod-9402"
-            className="flex items-center justify-center gap-1.5 px-5 h-10 rounded-full bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 active:scale-95 text-white font-bold text-[12px] transition-all shadow-md shadow-red-500/25 hover:shadow-lg hover:shadow-red-500/35 hover:-translate-y-0.5"
-          >
-            <span>Inspect Assessment</span>
-            <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
-          </Link>
-        </div>
-
-        {/* Nested Diagnostics Accordion Blocks (Liquid Glass Subtiles) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {/* Evidence 1 */}
-          <div className="p-3.5 rounded-xl liquid-glass-subtile flex flex-col gap-1.5">
-            <div className="flex items-center gap-1.5 text-primary">
-              <span className="material-symbols-outlined text-[16px]">database</span>
-              <span className="font-mono text-[10px] uppercase tracking-wider font-bold">Detected Evidence</span>
-            </div>
-            <p className="text-[13px] font-semibold text-slate-800 leading-snug">
-              Table rewrite lock detected on table with 49.8M rows
-            </p>
-            <p className="text-[11px] text-red-600 font-medium leading-snug mt-auto">
-              Impact: Estimated 5.2 minutes total downtime for all authentication routes.
-            </p>
-          </div>
-
-          {/* Evidence 2 (Hindsight Incident) */}
-          <div className="p-3.5 rounded-xl liquid-glass-subtile flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-primary">
-                <span className="material-symbols-outlined text-[16px]">history</span>
-                <span className="font-mono text-[10px] uppercase tracking-wider font-bold">Recalled Incident</span>
-              </div>
-              <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-mono text-[10px] font-bold border border-primary/20">
-                94.0% MATCH
-              </span>
-            </div>
-            <p className="text-[13px] font-semibold text-slate-800 leading-snug">
-              Postgres Table Rewrite Outage during User Schema Migration
-            </p>
-            <span className="font-mono text-[10px] text-slate-500 mt-auto">
-              Referenced root cause: INC-8842
-            </span>
-          </div>
-
-          {/* Evidence 3 (Verification Gate) */}
-          <div className="p-3.5 rounded-xl liquid-glass-subtile border-amber-300/80 flex flex-col gap-1.5">
-            <div className="flex items-center gap-1.5 text-amber-800">
-              <span className="material-symbols-outlined text-[16px]">lock</span>
-              <span className="font-mono text-[10px] uppercase tracking-wider font-bold">Verification Gate</span>
-            </div>
-            <p className="text-[12px] text-slate-700 leading-snug">
-              Requires refactoring migration to non-blocking pattern + manual verification sign-off.
-            </p>
-            <div className="flex items-center gap-1 font-mono text-[11px] text-red-700 font-bold mt-auto">
-              <span className="material-symbols-outlined text-[14px]">pause_circle</span>
-              <span>Deployment paused in CI</span>
-            </div>
+      {error && (
+        <div role="status" className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <WifiOff className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>
+            <p className="font-semibold">Some dashboard data is unavailable</p>
+            <p className="mt-0.5 text-xs leading-relaxed">{error}</p>
           </div>
         </div>
-      </motion.section>
+      )}
 
-      {/* Visual Storytelling: Pre-flight Pressure Matrix (Liquid Glass) */}
-      <motion.section
-        variants={fadeInVariants}
-        className="flex flex-col p-5 rounded-2xl liquid-glass-card gap-3.5"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[19px] text-primary">tune</span>
-            <span className="text-[15px] font-bold text-slate-900">Pre-flight Pressure Matrix</span>
-          </div>
-          <span className="font-mono text-[10px] text-slate-500 uppercase font-bold">
-            Correlated Shards
-          </span>
-        </div>
-
-        {/* Sparkline / telemetry visual */}
-        <div className="w-full h-20 relative flex items-end justify-between px-3 pt-3 rounded-xl liquid-glass-subtile overflow-hidden">
-          <svg className="w-full h-16 text-primary" fill="none" preserveAspectRatio="none" viewBox="0 0 100 30">
-            <path
-              d="M0 24 Q 15 20, 25 22 T 50 14 T 70 26 T 85 4 T 100 28"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeWidth="2.5"
-            />
-            <path
-              d="M0 24 Q 15 20, 25 22 T 50 14 T 70 26 T 85 4 T 100 28 L 100 30 L 0 30 Z"
-              fill="rgba(245, 158, 11, 0.16)"
-            />
-          </svg>
-          <div className="absolute top-2.5 left-3 flex items-center gap-2">
-            <span className="font-mono text-[10px] text-slate-500 font-bold">POOLED SESSIONS</span>
-            <span className="font-mono text-[10px] text-emerald-800 bg-emerald-50/90 border border-emerald-300 px-2 py-0.5 rounded-full font-bold">
-              49.8M KEYS VERIFIED
-            </span>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between text-slate-600 font-mono text-[11px] font-medium">
-          <span>Neon Vector Sync: Active</span>
-          <span>Prisma Schema Drift: 0.00%</span>
-        </div>
-      </motion.section>
-
-      {/* DEPLOYMENT REGISTER SECTION */}
-      <section className="flex flex-col gap-2.5 relative z-10" id="deployments">
-        <div className="flex flex-col gap-0.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[19px] text-primary">terminal</span>
-              <h2 className="text-[18px] font-bold text-slate-900 tracking-tight">Deployment Register</h2>
-            </div>
-            <span className="font-mono text-[11px] text-slate-600 font-semibold liquid-glass-pill px-2.5 py-0.5 rounded-full">
-              {filteredDeployments.length} Total
-            </span>
-          </div>
-          <p className="text-[12px] text-slate-600">Correlated pipeline runs across environments</p>
-        </div>
-
-        {/* Filter Controls Segment (Liquid Glass Pills with Tactile Shadows) */}
-        <div className="flex items-center justify-between gap-2 mt-1">
-          <div className="flex items-center p-1 rounded-full liquid-glass-pill shadow-sm">
-            {["ALL", "PRODUCTION", "STAGING"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setFilterEnvironment(tab)}
-                className={`px-3.5 py-1 rounded-full font-mono text-[10px] uppercase tracking-wider transition-all ${
-                  filterEnvironment === tab
-                    ? "nav-item-active"
-                    : "nav-item-inactive"
-                }`}
-              >
-                {tab === "ALL" ? "All" : tab.charAt(0) + tab.slice(1).toLowerCase()}
-              </button>
-            ))}
-          </div>
-          <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400 liquid-glass-pill px-3 py-1 rounded-full shadow-xs">
-            AUTO-SYNC: ON
-          </span>
-        </div>
-
-        {/* Deployments List Rows */}
-        <div className="flex flex-col gap-2.5 mt-1">
-          {filteredDeployments.map((dep) => {
-            const isCritical = dep.riskClassification === "CRITICAL" || dep.riskScore >= 80;
-            const isWarning = dep.riskClassification === "HIGH_RISK" || (dep.riskScore >= 50 && dep.riskScore < 80);
-
-            const scoreClass = isCritical
-              ? "bg-red-100/90 text-red-700 border border-red-300"
-              : isWarning
-              ? "bg-amber-100/90 text-amber-800 border border-amber-300"
-              : "bg-emerald-100/90 text-emerald-800 border border-emerald-300";
-
-            const statusClass =
-              dep.status === "blocked"
-                ? "bg-red-50/90 border border-red-300 text-red-700 font-bold"
-                : dep.status === "at_risk"
-                ? "bg-amber-50/90 border border-amber-300 text-amber-800 font-bold"
-                : dep.status === "rolled_back"
-                ? "bg-rose-50/90 border border-rose-300 text-rose-700 font-bold"
-                : "bg-emerald-50/90 border border-emerald-300 text-emerald-700 font-bold";
-
-            return (
-              <motion.div
-                key={dep.id}
-                variants={fadeInVariants}
-                className={`p-3.5 rounded-2xl liquid-glass-card ${
-                  isCritical ? "border-red-300/80" : ""
-                } flex flex-col gap-2`}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-bold text-[13px] text-slate-900 truncate">
-                      {dep.service}
-                    </span>
-                    <span className="font-mono text-[11px] text-slate-500 font-medium">
-                      {dep.version || "v1.0.0"} • {dep.commitHash?.slice(0, 7) || "8a1e94b"}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-                    <span className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold ${scoreClass}`}>
-                      {dep.riskClassification} {dep.riskScore}
-                    </span>
-                    <span className="font-mono text-[10px] text-slate-400 font-medium">
-                      {new Date(dep.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-slate-600">
-                  <div className="flex items-center gap-1.5">
-                    <span className="px-2.5 py-0.5 rounded-full liquid-glass-pill font-mono text-[10px] text-slate-700 font-semibold">
-                      {dep.environment}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-full font-mono text-[10px] uppercase ${statusClass}`}>
-                      {dep.status.replace("_", " ")}
-                    </span>
-                  </div>
-                  <Link
-                    href={`/deployments/${dep.id}`}
-                    className={`flex items-center gap-1 font-mono text-[11px] font-bold px-3 py-1 rounded-full liquid-glass-pill shadow-xs transition-all active:scale-95 ${
-                      isCritical ? "text-red-600 hover:text-red-700 hover:border-red-300" : "text-slate-700 hover:text-slate-900"
-                    }`}
-                  >
-                    <span>Inspect</span>
-                    <span className="material-symbols-outlined text-[14px]">chevron_right</span>
-                  </Link>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* RECURRING FAILURE CATEGORIES SECTION (Liquid Glass) */}
-      <section className="flex flex-col gap-2.5 relative z-10">
-        <div className="flex flex-col gap-0.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[19px] text-rose-600">warning</span>
-              <h2 className="text-[18px] font-bold text-slate-900 tracking-tight">Recurring Failure Categories</h2>
-            </div>
-            <span className="px-2.5 py-0.5 rounded-full liquid-glass-pill text-slate-700 font-mono text-[10px] font-bold">
-              Hindsight Index
-            </span>
-          </div>
-          <p className="text-[12px] text-slate-600">Pattern trends indexed in Hindsight memory</p>
-        </div>
-
-        {/* Categories Stack */}
-        <div className="flex flex-col gap-2.5 mt-1">
-          {mockRecurringFailureCategories.map((cat) => (
-            <div
-              key={cat.id}
-              className="p-4 rounded-2xl liquid-glass-card flex flex-col gap-2"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <span className="font-bold text-[13px] text-slate-900">{cat.category}</span>
-                <span
-                  className={`px-2.5 py-0.5 rounded-full font-mono text-[10px] font-bold uppercase flex-shrink-0 ${
-                    cat.blastRadius === "HIGH"
-                      ? "bg-rose-100/90 border border-rose-300 text-rose-700"
-                      : "bg-amber-100/90 border border-amber-300 text-amber-800"
-                  }`}
-                >
-                  {cat.blastRadius} Impact
-                </span>
-              </div>
-              <p className="text-[12px] text-slate-600 leading-snug">{cat.description}</p>
-              <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 font-mono text-[11px] text-slate-500">
-                <span>{cat.incidentCount} incidents recorded</span>
-                <span>MTTR: {cat.averageRecoveryMinutes}m</span>
-                <span
-                  className={`flex items-center gap-1 font-bold ${
-                    cat.trend === "DECREASING" ? "text-emerald-700" : "text-slate-600"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[13px]">
-                    {cat.trend === "DECREASING" ? "trending_down" : "remove"}
-                  </span>
-                  <span>{cat.trend}</span>
-                </span>
-              </div>
-            </div>
+      {loading && !stats ? (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="h-36 animate-pulse rounded-xl border border-surface-border bg-surface-subtle" />
           ))}
         </div>
-      </section>
+      ) : stats ? (
+        <>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+            <MetricCard
+              title="Deployments"
+              value={stats.totalDeployments}
+              detail="Recorded for this project"
+              icon={GitCommit}
+            />
+            <MetricCard
+              title="Assessments"
+              value={stats.activeAssessments}
+              detail="Persisted risk assessments"
+              icon={Activity}
+              tone="text-signal"
+            />
+            <MetricCard
+              title="Critical findings"
+              value={stats.criticalBlockedCount}
+              detail="Assessments classified as critical"
+              icon={ShieldAlert}
+              tone="text-red-600"
+            />
+            <MetricCard
+              title="Memory documents"
+              value={stats.memoryDocumentCount}
+              detail="Documents indexed in this project bank"
+              icon={BrainCircuit}
+              tone="text-emerald-700"
+            />
+          </div>
 
-      {/* HINDSIGHT MEMORY BANK CALLOUT FOOTER CARD (Liquid Glass) */}
-      <section className="p-5 rounded-2xl liquid-glass-card relative overflow-hidden flex flex-col gap-3.5 mb-4">
-        <div className="flex items-start gap-3.5">
-          <div className="w-10 h-10 rounded-xl liquid-glass-pill flex items-center justify-center text-primary flex-shrink-0">
-            <span className="material-symbols-outlined text-[22px]">psychology</span>
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+            <section className="rounded-xl border border-surface-border bg-surface p-4 shadow-panel-subtle xl:col-span-2">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-surface-border pb-3">
+                <div>
+                  <h2 className="flex items-center gap-2 text-sm font-bold text-text-primary">
+                    <GitCommit className="h-4 w-4 text-signal" />
+                    Recent releases
+                  </h2>
+                  <p className="mt-1 text-xs text-text-muted">Latest deployment events stored for this project.</p>
+                </div>
+                <Link href="/deployments" className="inline-flex items-center gap-1 text-xs font-semibold text-signal hover:underline">
+                  Open register <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+
+              {stats.latestDeployments.length === 0 ? (
+                <div className="flex min-h-44 flex-col items-center justify-center px-4 text-center">
+                  <GitCommit className="h-7 w-7 text-text-muted" />
+                  <p className="mt-3 text-sm font-semibold text-text-primary">No releases recorded yet</p>
+                  <p className="mt-1 max-w-sm text-xs leading-relaxed text-text-muted">
+                    Send a signed deployment event from your CI workflow to populate this register.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-surface-border">
+                  {stats.latestDeployments.map((deployment) => (
+                    <div key={deployment.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={`rounded-full border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase ${riskStyle(deployment.assessment?.overallCategory)}`}>
+                            {label(deployment.assessment?.overallCategory || "Not assessed")}
+                          </span>
+                          <StatePill value={deployment.status} />
+                          <span className="text-[10px] text-text-muted">{label(deployment.environment)}</span>
+                        </div>
+                        <p className="mt-1.5 truncate font-mono text-xs font-semibold text-text-primary">
+                          {deployment.commitSha ? deployment.commitSha.slice(0, 12) : deployment.providerDeploymentId || deployment.id}
+                        </p>
+                        <p className="mt-0.5 truncate text-xs text-text-muted">
+                          {deployment.branch ? `Branch ${deployment.branch} · ` : ""}{formatDate(deployment.startedAt || deployment.createdAt)}
+                        </p>
+                        {deployment.assessment?.summary && (
+                          <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-text-secondary">{deployment.assessment.summary}</p>
+                        )}
+                      </div>
+                      {deployment.url ? (
+                        <a
+                          href={deployment.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-9 shrink-0 items-center justify-center gap-1 rounded-lg border border-surface-border px-3 py-2 text-xs font-semibold text-text-secondary transition hover:bg-surface-subtle hover:text-signal"
+                        >
+                          Open deployment <ArrowUpRight className="h-3.5 w-3.5" />
+                        </a>
+                      ) : (
+                        <span className="text-[10px] font-mono uppercase text-text-muted">No deployment URL</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <aside className="space-y-4">
+              <section className="rounded-xl border border-surface-border bg-surface p-4 shadow-panel-subtle">
+                <div className="flex items-center gap-2">
+                  <Database className="h-4 w-4 text-signal" />
+                  <h2 className="text-sm font-bold text-text-primary">Integration health</h2>
+                </div>
+                <div className="mt-4 space-y-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs text-text-secondary">Neon PostgreSQL</span>
+                    <span className={`text-[10px] font-mono font-semibold uppercase ${databaseUnavailable ? "text-red-700" : "text-emerald-700"}`}>
+                      {databaseUnavailable ? "Unavailable" : "Connected"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs text-text-secondary">Hindsight memory</span>
+                    <span className={`text-[10px] font-mono font-semibold uppercase ${hindsightUnavailable ? "text-red-700" : stats.hindsightStatus === "MOCK_MODE" ? "text-amber-700" : "text-emerald-700"}`}>
+                      {label(stats.hindsightStatus)}
+                    </span>
+                  </div>
+                  <div className="flex items-start justify-between gap-3 border-t border-surface-border pt-3">
+                    <span className="text-xs text-text-muted">Memory bank</span>
+                    <code className="max-w-[60%] break-all text-right text-[10px] text-text-secondary">{stats.bankId}</code>
+                  </div>
+                </div>
+                <Link href="/integrations" className="mt-4 inline-flex items-center gap-1 text-xs font-semibold text-signal hover:underline">
+                  View diagnostics <ArrowUpRight className="h-3.5 w-3.5" />
+                </Link>
+              </section>
+
+              <section className="rounded-xl border border-surface-border bg-brand-subtle/60 p-4">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="h-4 w-4 text-signal" />
+                  <h2 className="text-sm font-bold text-text-primary">Deterministic checks</h2>
+                </div>
+                <p className="mt-2 text-3xl font-bold tabular-nums text-text-primary">{stats.deterministicRuleCount}</p>
+                <p className="mt-1 text-xs leading-relaxed text-text-secondary">
+                  Rules registered in the current risk engine. Historical memory informs recommendations; current evidence determines the assessment.
+                </p>
+                <div className="mt-3 flex items-center gap-2 text-[10px] text-text-muted">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  <span>Rule count from the live registry</span>
+                </div>
+              </section>
+            </aside>
           </div>
-          <div className="flex flex-col">
-            <h3 className="text-[15px] font-bold text-slate-900">Hindsight Memory Bank</h3>
-            <p className="text-[12px] text-slate-600 mt-0.5 leading-snug">
-              Continuous retrospective memory learns from every post-mortem and protects upcoming releases.
-            </p>
-          </div>
+        </>
+      ) : (
+        <div className="rounded-xl border border-surface-border bg-surface p-8 text-center shadow-panel-subtle">
+          <CircleAlert className="mx-auto h-8 w-8 text-amber-600" />
+          <h2 className="mt-3 text-sm font-semibold text-text-primary">Dashboard could not load</h2>
+          <p className="mt-1 text-xs text-text-muted">{error || "The API did not return dashboard data."}</p>
+          <button type="button" onClick={() => void refresh()} className="mt-4 rounded-lg bg-signal px-4 py-2 text-xs font-semibold text-white hover:opacity-90">
+            Try again
+          </button>
         </div>
-        <Link
-          href="/memories"
-          className="flex items-center justify-between px-4 py-3 rounded-xl liquid-glass-pill text-primary font-semibold"
-        >
-          <span className="text-[12px] font-bold text-slate-900">Explore Memory Bank (5 Indexed)</span>
-          <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-        </Link>
-      </section>
-    </motion.div>
+      )}
+
+      {stats && (
+        <p className="flex items-center gap-2 text-[10px] text-text-muted" aria-live="polite">
+          <Clock3 className="h-3 w-3" />
+          Project {stats.projectId} · Neon {label(stats.databaseStatus)} · Hindsight {label(stats.hindsightStatus)}
+        </p>
+      )}
+    </div>
   );
 }

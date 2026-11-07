@@ -3,21 +3,22 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { AppLayout } from "@/components/layout/AppLayout";
 
-const geistSans = localFont({
+// Self-contained typography: local fonts avoid network failures during build
+const sansFont = localFont({
   src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
+  variable: "--font-sans",
   weight: "100 900",
 });
-const geistMono = localFont({
+const monoFont = localFont({
   src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
+  variable: "--font-mono",
   weight: "100 900",
 });
 
 export const metadata: Metadata = {
-  title: "ReleaseTrace — Release Operations & Incident Recall",
+  title: "ReleaseTrace — Release Risk Intelligence & Hindsight Memory",
   description:
-    "Deterministic pre-flight risk classification, Prisma migration analysis, and Hindsight incident recall.",
+    "Enterprise engineering interface for pre-flight deployment risk classification, environment drift comparison, and Hindsight post-mortem memory recall.",
 };
 
 export default function RootLayout({
@@ -28,14 +29,10 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("releasetrace-theme");if(t&&["light","dark","warm-brown","cyber-teal","sunset-rose"].indexOf(t)!==-1){document.documentElement.setAttribute("data-theme",t);}else{document.documentElement.setAttribute("data-theme","light");}}catch(e){}})();`,
-          }}
-        />
+        <script dangerouslySetInnerHTML={{ __html: '(function(){try{var t=localStorage.getItem("releasetrace-theme");if(t&&["light","dark","warm-brown","cyber-teal","sunset-rose"].indexOf(t)!==-1){document.documentElement.setAttribute("data-theme",t);}else{document.documentElement.setAttribute("data-theme","light");}}catch(e){}})();' }} />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen selection:bg-primary-container/20 selection:text-primary`}
+        className={`${sansFont.variable} ${monoFont.variable} antialiased bg-background text-foreground min-h-screen`}
       >
         <AppLayout>{children}</AppLayout>
       </body>

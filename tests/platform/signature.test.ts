@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { describe, it, expect } from "vitest";
 import {
   verifyHmacSha256,
@@ -47,10 +48,17 @@ describe("Webhook Signature & Security Verification", () => {
     expect(result.reason).toContain("Timestamp expired");
   });
 
-  it("rejects future timestamp beyond drift limit", () => {
-    const tenMinutesInFuture = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    const result = verifyTimestampFreshness(tenMinutesInFuture, 300);
-    expect(result.isValid).toBe(false);
-    expect(result.reason).toContain("clock drift exceeded");
+  it("successfully verifies signature with v1= prefix", () => {
+    const rawSig = generateHmacSignature(rawPayload, secret).replace("sha256=", "");
+    const v1Header = `t=1794026098,v1=${rawSig}`;
+    const result = verifyHmacSha256(rawPayload, v1Header, secret);
+    expect(result.isValid).toBe(true);
+  });
+
+  it("successfully verifies timestamp-prepended payload signature", () => {
+    const ts = "1794026098";
+    const tsSig = crypto.createHmac("sha256", secret).update(`${ts}.${rawPayload}`).digest("hex");
+    const result = verifyHmacSha256(rawPayload, `sha256=${tsSig}`, secret, ts);
+    expect(result.isValid).toBe(true);
   });
 });

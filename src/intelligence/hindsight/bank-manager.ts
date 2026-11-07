@@ -34,17 +34,19 @@ export class ProjectMemoryBankManager {
 
   /**
    * Deterministic per-project memory bank identifier.
-   * e.g., "my-payment-service" -> "rt-my-payment-service"
+   * Uses authoritative RELEASETRACE_PROJECT_ID when projectId is omitted or empty.
+   * e.g., "proj_releasetrace_core" -> "rt-proj_releasetrace_core"
    */
-  public getProjectBankId(projectId: string): string {
-    const raw = (projectId && projectId.trim().length > 0) ? projectId : 'auth-gateway';
+  public getProjectBankId(projectId?: string): string {
+    const canonicalFallback = process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
+    const raw = (projectId && projectId.trim().length > 0) ? projectId : canonicalFallback;
     const sanitized = raw
       .toLowerCase()
       .trim()
       .replace(/[^a-z0-9_-]/g, '-')
       .replace(/-+/g, '-')
       .replace(/^-+|-+$/g, '');
-    return `rt-${sanitized || 'auth-gateway'}`;
+    return `rt-${sanitized || canonicalFallback}`;
   }
 
   /**

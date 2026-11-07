@@ -7,9 +7,15 @@ import prisma from "@/lib/db/client";
 
 export async function POST(request: NextRequest) {
   const secret =
-    process.env.RELESETRACE_WEBHOOK_SECRET ||
-    process.env.WEBHOOK_SECRET ||
-    "development-webhook-secret-key-32-chars-min";
+    process.env.RELEASETRACE_WEBHOOK_SECRET ||
+    process.env.WEBHOOK_SECRET;
+
+  if (!secret) {
+    return NextResponse.json(
+      { error: "Configuration Error: RELEASETRACE_WEBHOOK_SECRET is not configured on server" },
+      { status: 500 }
+    );
+  }
 
   // 1. Read raw body text for timing-safe HMAC validation
   let rawBody: string;
@@ -30,7 +36,7 @@ export async function POST(request: NextRequest) {
 
   // Enforce strict HMAC verification when signature header is present or in production
   if (process.env.NODE_ENV === "production" || signatureHeader) {
-    const sigCheck = verifyHmacSha256(rawBody, signatureHeader, secret);
+    const sigCheck = verifyHmacSha256(rawBody, signatureHeader, secret, timestampHeader);
     if (!sigCheck.isValid) {
       return NextResponse.json(
         { error: "Unauthorized: Invalid or missing webhook signature", reason: sigCheck.reason },
@@ -71,14 +77,40 @@ export async function POST(request: NextRequest) {
 
   const deploymentEvent = parseResult.data;
 
-  // 5. Idempotency Check
+  // 5. Durable Idempotency Tracking
   const idempotencyKey = `${deploymentEvent.provider}-${deploymentEvent.eventId}`;
   try {
-    const existing = await prisma.webhookEvent.findUnique({
+    // Ensure parent project exists
+    await prisma.project.upsert({
+      where: { id: deploymentEvent.projectId },
+      create: {
+        id: deploymentEvent.projectId,
+        name: deploymentEvent.projectName || "ReleaseTrace Project",
+        slug: deploymentEvent.projectId.toLowerCase().replace(/[^a-z0-9_-]/g, "-"),
+        repository: deploymentEvent.evidence.repository || "amrit-verse/ReleaseTrace",
+        hindsightBankId: `rt-${deploymentEvent.projectId}`,
+        workspace: {
+          connectOrCreate: {
+            where: { slug: "default-workspace" },
+            create: {
+              id: "ws-default",
+              name: "Default Workspace",
+              slug: "default-workspace",
+            },
+          },
+        },
+      },
+      update: {
+        name: deploymentEvent.projectName || undefined,
+      },
+    });
+
+    const existingWebhookRecord = await prisma.webhookEvent.findUnique({
       where: { idempotencyKey },
     });
 
-    if (existing) {
+    // If previously received AND successfully processed/dispatched, return deduplicated 200
+    if (existingWebhookRecord && existingWebhookRecord.processed === true) {
       return NextResponse.json(
         {
           accepted: true,
@@ -91,21 +123,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Persist new webhook event
-    await prisma.webhookEvent.create({
-      data: {
-        projectId: deploymentEvent.projectId,
-        provider: deploymentEvent.provider,
-        eventId: deploymentEvent.eventId,
-        idempotencyKey,
-        eventType: deploymentEvent.eventType,
-        payload: deploymentEvent as unknown as object,
-        processed: true,
-        processedAt: new Date(),
-      },
-    });
-  } catch {
-    // If DB is offline or mock store, continue safely
+    // If new event, record as pending (processed: false)
+    if (!existingWebhookRecord) {
+      await prisma.webhookEvent.create({
+        data: {
+          projectId: deploymentEvent.projectId,
+          provider: deploymentEvent.provider,
+          eventId: deploymentEvent.eventId,
+          idempotencyKey,
+          eventType: deploymentEvent.eventType,
+          payload: deploymentEvent as unknown as object,
+          processed: false, // Starts as pending until Inngest dispatch succeeds
+          error: null,
+        },
+      });
+    }
+  } catch (dbErr) {
+    console.warn("DB webhook idempotency tracking unavailable:", dbErr);
   }
 
   // 6. Asynchronously correlate with Vercel deployment by commit SHA
@@ -126,7 +160,7 @@ export async function POST(request: NextRequest) {
 
   // 7. Enqueue Inngest background event
   try {
-    await inngest.send({
+    const sendResult = await inngest.send({
       name: "releasetrace/deployment.received",
       data: {
         event: {
@@ -141,23 +175,63 @@ export async function POST(request: NextRequest) {
         correlatedVercelId: vercelId,
       },
     });
-  } catch (err) {
-    console.warn("Inngest event dispatch skipped or dev server offline:", err);
-  }
 
-  // 8. Return 202 Accepted
-  return NextResponse.json(
-    {
-      accepted: true,
-      deduplicated: false,
-      eventId: deploymentEvent.eventId,
-      provider: deploymentEvent.provider,
-      commitSha: deploymentEvent.evidence.commitSha,
-      vercelCorrelated: Boolean(vercelUrl),
-      vercelUrl: vercelUrl || null,
-      status: "queued_for_assessment",
-      receivedAt: new Date().toISOString(),
-    },
-    { status: 202 }
-  );
+    // Mark event as successfully processed in DB ONLY AFTER Inngest dispatch succeeds
+    try {
+      await prisma.webhookEvent.update({
+        where: { idempotencyKey },
+        data: {
+          processed: true,
+          processedAt: new Date(),
+          error: null,
+        },
+      });
+    } catch {
+      // Non-blocking DB status update
+    }
+
+    // 8. Return 202 Accepted with dispatched Inngest event ID
+    return NextResponse.json(
+      {
+        accepted: true,
+        deduplicated: false,
+        eventId: deploymentEvent.eventId,
+        provider: deploymentEvent.provider,
+        commitSha: deploymentEvent.evidence.commitSha,
+        vercelCorrelated: Boolean(vercelUrl),
+        vercelUrl: vercelUrl || null,
+        status: "queued_for_assessment",
+        inngestEventIds: sendResult?.ids || [],
+        receivedAt: new Date().toISOString(),
+      },
+      { status: 202 }
+    );
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    console.error("Inngest event dispatch failed:", err);
+
+    // Record failure in DB so retry is permitted
+    try {
+      await prisma.webhookEvent.update({
+        where: { idempotencyKey },
+        data: {
+          processed: false,
+          error: errorMessage,
+        },
+      });
+    } catch {
+      // Ignore DB tracking failure
+    }
+
+    return NextResponse.json(
+      {
+        accepted: false,
+        recoverable: true,
+        error: "Background Execution Error: Failed to dispatch deployment event to Inngest",
+        details: errorMessage,
+        eventId: deploymentEvent.eventId,
+      },
+      { status: 502 }
+    );
+  }
 }

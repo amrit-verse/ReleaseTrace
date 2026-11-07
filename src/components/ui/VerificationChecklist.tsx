@@ -206,7 +206,7 @@ export function VerificationChecklist({
               initial="hidden"
               animate="visible"
               exit="exit"
-              className="fixed inset-0 bg-black/70 backdrop-blur-sm"
+              className="fixed inset-0 bg-[#1a1c1c]/40 backdrop-blur-sm"
               onClick={() => setOverrideModalAction(null)}
             />
             <motion.div

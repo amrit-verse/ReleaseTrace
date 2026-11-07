@@ -11,6 +11,7 @@ export type ReleaseTraceEvents = {
   };
   "releasetrace/resolution.confirmed": {
     data: {
+      projectId?: string;
       assessmentId: string;
       deploymentId: string;
       engineerName: string;

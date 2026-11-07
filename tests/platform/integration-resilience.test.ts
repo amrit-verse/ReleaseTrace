@@ -19,6 +19,13 @@ vi.mock("@/lib/db/client", () => {
           mockWebhookEvents.set(data.idempotencyKey, { ...data, id: "mock_wh_id" });
           return Promise.resolve({ ...data, id: "mock_wh_id" });
         }),
+        update: vi.fn().mockImplementation(({ where, data }) => {
+          const item = mockWebhookEvents.get(where.idempotencyKey);
+          if (item) {
+            Object.assign(item, data);
+          }
+          return Promise.resolve(item || { ...data });
+        }),
         updateMany: vi.fn().mockImplementation(({ where, data }) => {
           const item = mockWebhookEvents.get(where.idempotencyKey);
           if (item) {
@@ -35,6 +42,16 @@ vi.mock("@/lib/db/client", () => {
             slug: "core",
             repository: "amrit-verse/releasetrace",
             hindsightBankId: "bank_core",
+          });
+        }),
+        upsert: vi.fn().mockImplementation(({ create, update, where }) => {
+          return Promise.resolve({
+            id: where.id || "proj_core",
+            name: "ReleaseTrace Core",
+            slug: "core",
+            repository: "amrit-verse/releasetrace",
+            hindsightBankId: "bank_core",
+            ...(create || update),
           });
         }),
         create: vi.fn().mockResolvedValue({ id: "proj_core" }),
@@ -93,6 +110,10 @@ vi.mock("@/lib/inngest/client", async (importOriginal) => {
 
 describe("Platform & Integration Engine — Thorough Verification", () => {
   const secret = "development-webhook-secret-key-32-chars-min";
+
+  beforeEach(() => {
+    process.env.RELEASETRACE_WEBHOOK_SECRET = secret;
+  });
 
   const createValidPayload = (overrides = {}) => ({
     eventId: "evt_" + Math.random().toString(36).substring(7),
