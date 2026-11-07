@@ -11,65 +11,74 @@ This document follows the implementation in the repository rather than describin
 ```mermaid
 flowchart TB
   subgraph SOURCES["1 · Release evidence"]
-    GHA["GitHub Actions CI\nBuild · tests · Prisma validation"]
-    META["Metadata collector\nCommit · branch · test results · migrations"]
-    GHA --> META
+    GHA["GitHub Actions CI<br/>Build · tests · Prisma validation"]
+    META["Metadata collector<br/>Commit · branch · test results · migrations"]
+    GHA -->|"Package metadata"| META
   end
 
   subgraph INGEST["2 · Trusted ingestion · Next.js API"]
     WH["POST /api/webhooks/deployments"]
-    SIG["HMAC-SHA256 verification\nTimestamp / replay checks"]
-    CONTRACT["DeploymentEventSchema\nZod contract validation"]
-    DEDUP["Idempotency check\nWebhookEvent"]
-    VERCEL["Vercel correlation\nby commit SHA"]
-    WH --> SIG --> CONTRACT --> DEDUP --> VERCEL
+    SIG["HMAC-SHA256 verification<br/>Timestamp / replay checks"]
+    CONTRACT["DeploymentEventSchema<br/>Zod contract validation"]
+    DEDUP["Idempotency check<br/>WebhookEvent"]
+    VERCEL["Vercel correlation<br/>by commit SHA"]
+    WH -->|"Verify signature"| SIG
+    SIG -->|"Validate contract"| CONTRACT
+    CONTRACT -->|"Check idempotency"| DEDUP
+    DEDUP -->|"Correlate commit"| VERCEL
   end
 
   subgraph DURABLE["3 · Durable orchestration · Inngest"]
     EVENT["releasetrace/deployment.received"]
-    PROCESS["processDeploymentWebhook\nRetryable, step-based workflow"]
-    EVENT --> PROCESS
+    PROCESS["processDeploymentWebhook<br/>Retryable, step-based workflow"]
+    EVENT -->|"Trigger workflow"| PROCESS
   end
 
   subgraph INTEL["4 · Release intelligence"]
-    RECALL["Hindsight recall\nProject memory bank"]
-    COMPARE["Environment comparison\nRuntime · DB · infrastructure · flags"]
-    RELEVANCE["Relevance + contradiction checks\n40% recall · 35% signature · 25% environment"]
-    RULES["Deterministic risk rules\nEmpty / weak recall can abstain"]
-    GROQ["Groq synthesis\nStructured output validated with Zod"]
-    SAFETY["Risk safety floor\nCRITICAL / HIGH cannot be downgraded"]
-    RECALL --> COMPARE --> RELEVANCE --> RULES --> GROQ --> SAFETY
+    RECALL["Hindsight recall<br/>Project memory bank"]
+    COMPARE["Environment comparison<br/>Runtime · DB · infrastructure · flags"]
+    RELEVANCE["Relevance + contradiction checks<br/>40% recall · 35% signature · 25% environment"]
+    RULES["Deterministic risk rules<br/>Empty / weak recall can abstain"]
+    GROQ["Groq synthesis<br/>Structured output validated with Zod"]
+    SAFETY["Risk safety floor<br/>CRITICAL / HIGH cannot be downgraded"]
+    RECALL -->|"Input"| COMPARE
+    COMPARE -->|"Input"| RELEVANCE
+    RELEVANCE -->|"Input"| RULES
+    RULES -->|"Input"| GROQ
+    GROQ -->|"Input"| SAFETY
   end
 
   subgraph DATA["5 · Persistence"]
-    NEON[("Neon PostgreSQL\nPrisma · Projects · WebhookEvents\nDeployments · Assessments · References")]
-    HINDSIGHT[("Hindsight Cloud\nProject-scoped semantic memory banks")]
+    NEON[("Neon PostgreSQL<br/>Prisma · Projects · WebhookEvents<br/>Deployments · Assessments · References")]
+    HINDSIGHT[("Hindsight Cloud<br/>Project-scoped semantic memory banks")]
   end
 
   subgraph PRODUCT["6 · Product surface"]
-    DASH["Dashboard\n/api/dashboard/stats"]
-    DEPLOYS["Deployment register\n/api/deployments"]
-    MEM["Memory explorer\n/api/memories"]
+    DASH["Dashboard<br/>/api/dashboard/stats"]
+    DEPLOYS["Deployment register<br/>/api/deployments"]
+    MEM["Memory explorer<br/>/api/memories"]
     HEALTH["Integration health"]
     LAB["Learning Lab / fixtures"]
     RESOLVE["Engineer verifies resolution"]
-    MEMAPI["POST /api/memories\\nBearer-authenticated production write\\nor isolated demo write"]
-    ASSESSAPI["POST /api/assess\\nDirect assessment / explicit fixture"]
+    MEMAPI["POST /api/memories<br/>Bearer-authenticated production write<br/>or isolated demo write"]
+    ASSESSAPI["POST /api/assess<br/>Direct assessment / explicit fixture"]
   end
 
   META -->|"Signed HTTPS event"| WH
   VERCEL -->|"Enriched deployment metadata"| EVENT
   VERCEL -->|"Persist pending event"| NEON
-  PROCESS --> RECALL
+  PROCESS -->|"Execute intelligence"| RECALL
   PROCESS -->|"Persist deployment + assessment"| NEON
   RECALL <-->|"Recall relevant experiences"| HINDSIGHT
   SAFETY -->|"Assessment + provenance"| NEON
-  NEON --> DASH
-  NEON --> DEPLOYS
-  HINDSIGHT --> MEM
-  HEALTH --> NEON
-  RESOLVE --> MEMAPI -->|"Validated confirmed case"| HINDSIGHT
-  LAB --> ASSESSAPI --> RECALL
+  NEON -->|"Display state"| DASH
+  NEON -->|"Display register"| DEPLOYS
+  HINDSIGHT -->|"Browse memories"| MEM
+  HEALTH -->|"Probe state"| NEON
+  RESOLVE -->|"Submit resolution"| MEMAPI
+  MEMAPI -->|"Validated confirmed case"| HINDSIGHT
+  LAB -->|"Request assessment"| ASSESSAPI
+  ASSESSAPI -->|"Recall"| RECALL
 ```
 
 ## 2. Release event lifecycle
@@ -112,24 +121,33 @@ Relevant files:
 
 ```mermaid
 flowchart TD
-  INPUT["DeploymentContext\nCurrent commit + environment + evidence"]
-  RECALL["Recall candidate failure experiences\nfrom the project's Hindsight bank"]
+  INPUT["DeploymentContext<br/>Current commit + environment + evidence"]
+  RECALL["Recall candidate failure experiences<br/>from project Hindsight bank"]
   ENV["Compare historical and current environments"]
   CONTRA["Detect contradictory memories"]
-  SCORE["Score each candidate\n0.40 × Hindsight score\n0.35 × failure-signature similarity\n0.25 × environment match"]
-  GATE{"Any candidate at or above\nthe 0.65 relevance floor?"}
-  ABSTAIN["Abstain from historical analogy\nEmpty bank or weak recall"]
+  SCORE["Score each candidate<br/>0.40 * Hindsight score<br/>0.35 * failure-signature similarity<br/>0.25 * environment match"]
+  GATE{"Any candidate at or above<br/>the 0.65 relevance floor?"}
+  ABSTAIN["Abstain from historical analogy<br/>Empty bank or weak recall"]
   RULES["Evaluate deterministic risk rules"]
   PROMPT["Build bounded assessment prompt"]
   LLM["Groq structured assessment"]
   VALIDATE["Zod output validation"]
-  FLOOR["Safety floor\nCRITICAL / HIGH stays at least that high"]
-  RESULT["Assessment + recommendations\nRisk · evidence · memory provenance"]
+  FLOOR["Safety floor<br/>CRITICAL / HIGH stays at least that high"]
+  RESULT["Assessment + recommendations<br/>Risk · evidence · memory provenance"]
 
-  INPUT --> RECALL --> ENV --> CONTRA --> SCORE --> GATE
-  GATE -->|"No"| ABSTAIN --> RULES
+  INPUT -->|"Candidate lookup"| RECALL
+  RECALL -->|"Evaluate context"| ENV
+  ENV -->|"Check consistency"| CONTRA
+  CONTRA -->|"Calculate composite"| SCORE
+  SCORE -->|"Check threshold"| GATE
+  GATE -->|"No"| ABSTAIN
+  ABSTAIN -->|"Apply baseline"| RULES
   GATE -->|"Yes"| RULES
-  RULES --> PROMPT --> LLM --> VALIDATE --> FLOOR --> RESULT
+  RULES -->|"Build input"| PROMPT
+  PROMPT -->|"Inference"| LLM
+  LLM -->|"Validate schema"| VALIDATE
+  VALIDATE -->|"Apply floor"| FLOOR
+  FLOOR -->|"Final assessment"| RESULT
 ```
 
 The engine in `src/intelligence/engine/intelligence-engine.ts` coordinates these stages:

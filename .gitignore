@@ -1,16 +1,21 @@
 # dependencies
 /node_modules
+node_modules/
 /.pnp
 .pnp.js
 .yarn/install-state.gz
 
 # testing
 /coverage
+coverage/
 /playwright-report
+playwright-report/
 /test-results
+test-results/
 
 # next.js
 /.next/
+.next/
 /out/
 /build
 
@@ -28,8 +33,10 @@ yarn-error.log*
 
 # local env files (CRITICAL: NEVER COMMIT SECRETS)
 .env
+.env*
 .env.*
 .env*.local
+!.env.example
 
 # vercel
 .vercel
@@ -41,3 +48,6 @@ next-env.d.ts
 # scratch and local recordings
 scratch/
 recordings/
+*.webm
+*.mp4
+
