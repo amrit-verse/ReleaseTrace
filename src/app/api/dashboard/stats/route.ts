@@ -7,10 +7,11 @@ import { RISK_RULE_REGISTRY } from "@/intelligence/rules/risk-rules";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
+    const canonicalProjectId = process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
     const projectId =
       searchParams.get("projectId") ||
       searchParams.get("service") ||
-      "auth-gateway";
+      canonicalProjectId;
 
     // Dynamic count from actual risk rule registry
     const deterministicRuleCount = RISK_RULE_REGISTRY.length;

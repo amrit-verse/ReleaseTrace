@@ -22,8 +22,8 @@ jobs:
       pull-requests: read
 
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://dummy:dummy@localhost:5432/dummy' }}
-      DIRECT_URL: ${{ secrets.DIRECT_URL || 'postgresql://dummy:dummy@localhost:5432/dummy' }}
+      DATABASE_URL: "postgresql://ci_runner:ci_runner@localhost:5432/releasetrace_ci_test"
+      DIRECT_URL: "postgresql://ci_runner:ci_runner@localhost:5432/releasetrace_ci_test"
       HINDSIGHT_BASE_URL: "https://api.hindsight.vectorize.io"
       HINDSIGHT_USE_MOCK: "true"
 
@@ -54,7 +54,7 @@ jobs:
       - name: Production Build Check
         run: npm run build
 
-      - name: Collect & Dispatch Signed Deployment Event
+      - name: Collect & Dispatch Signed CI Verification Event
         if: always()
         run: |
           BUILD_STATUS="${{ job.status }}"
@@ -65,8 +65,8 @@ jobs:
             node scripts/collect-deployment-metadata.mjs --build-failed --ignore-connection-failure
           fi
         env:
-          RELEASETRACE_WEBHOOK_SECRET: ${{ secrets.RELEASETRACE_WEBHOOK_SECRET || 'dev_releasetrace_webhook_secret' }}
-          RELEASETRACE_ENDPOINT: ${{ secrets.RELEASETRACE_ENDPOINT || 'https://releasetrace.domain/api/webhooks/deployments' }}
+          RELEASETRACE_WEBHOOK_SECRET: ${{ secrets.RELEASETRACE_WEBHOOK_SECRET }}
+          RELEASETRACE_ENDPOINT: ${{ secrets.RELEASETRACE_ENDPOINT || 'https://releasetrace.vercel.app/api/webhooks/deployments' }}
           RELEASETRACE_PROJECT_ID: ${{ vars.RELEASETRACE_PROJECT_ID || 'proj_releasetrace_core' }}
-          RELEASETRACE_PROJECT_NAME: "ReleaseTrace Core"
+          RELEASETRACE_PROJECT_NAME: ${{ vars.RELEASETRACE_PROJECT_NAME || 'ReleaseTrace Core' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

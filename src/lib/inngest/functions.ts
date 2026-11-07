@@ -89,6 +89,10 @@ export const processDeploymentWebhook = inngest.createFunction(
       const evidenceEnv = (deploymentEvent.evidence as any)?.environmentContext || {};
       const gitDiff = (deploymentEvent.evidence as any)?.gitDiffSummary || {};
 
+      // Preserve evidence provenance without fabricating unobserved estimates
+      const additions = (deploymentEvent.evidence as any)?.additions ?? gitDiff.additions ?? 0;
+      const deletions = (deploymentEvent.evidence as any)?.deletions ?? gitDiff.deletions ?? 0;
+
       const context: DeploymentContext = {
         deploymentId: deploymentRecord.id,
         projectId: deploymentEvent.projectId,
@@ -99,93 +103,85 @@ export const processDeploymentWebhook = inngest.createFunction(
         targetEnvironment: deploymentEvent.evidence.environment === "production" ? "production" : "staging",
         gitDiffSummary: {
           filesChanged: changedFiles,
-          additions: (deploymentEvent.evidence as any)?.additions ?? gitDiff.additions ?? (changedFiles.length > 0 ? changedFiles.length * 12 : 5),
-          deletions: (deploymentEvent.evidence as any)?.deletions ?? gitDiff.deletions ?? 0,
+          additions,
+          deletions,
           hasDatabaseMigrations: hasMigrations,
           migrationDetails: deploymentEvent.evidence.migrationEvidence?.migrationNames?.join(", "),
         },
         environment: {
-          runtime: deploymentEvent.evidence.runtimeVersion || metadataEnv.runtime || evidenceEnv.runtime || "nodejs-22",
+          runtime: deploymentEvent.evidence.runtimeVersion || metadataEnv.runtime || evidenceEnv.runtime || "unknown",
           database: {
             type: metadataEnv.databaseType || evidenceEnv.databaseType || "postgresql",
-            version: metadataEnv.databaseVersion || evidenceEnv.databaseVersion || "17",
-            poolSize: metadataEnv.poolSize || evidenceEnv.poolSize || 10,
+            version: metadataEnv.databaseVersion || evidenceEnv.databaseVersion || "unknown",
+            poolSize: metadataEnv.poolSize ?? evidenceEnv.poolSize ?? undefined,
           },
           infrastructure: {
-            provider: metadataEnv.provider || (deploymentEvent.provider === "vercel" ? "vercel" : "github_actions"),
-            region: metadataEnv.region || "iad1",
-            replicas: metadataEnv.replicas || 1,
+            provider: metadataEnv.provider || evidenceEnv.provider || (deploymentEvent.provider === "vercel" ? "vercel" : "github_actions"),
+            region: metadataEnv.region || evidenceEnv.region || "unknown",
+            replicas: metadataEnv.replicas ?? evidenceEnv.replicas ?? 1,
           },
-          featureFlags: metadataEnv.featureFlags || {},
-          envVariables: metadataEnv.envVariables || {},
-          dependencies: {
-            [deploymentEvent.evidence.framework || "next"]: "15.5.29",
-            "@prisma/client": "6.19.3",
-            ...(metadataEnv.dependencies || {}),
-          },
+          featureFlags: metadataEnv.featureFlags || evidenceEnv.featureFlags || {},
+          envVariables: metadataEnv.envVariables || evidenceEnv.envVariables || {},
+          dependencies: metadataEnv.dependencies || evidenceEnv.dependencies || {},
         },
       };
 
       return await intelligenceEngine.assessDeployment(context);
     });
 
-    // Step 3: Persist Assessment and Memory References in PostgreSQL
+    // Step 3: Persist Assessment and Memory References in PostgreSQL (Never swallow DB failures)
     await step.run("persist-assessment-record", async () => {
-      try {
-        const assessmentRecord = await prisma.assessment.upsert({
-          where: { deploymentId: deploymentRecord.id },
-          create: {
-            deploymentId: deploymentRecord.id,
-            overallCategory: assessmentResult.overallRisk,
-            summary: assessmentResult.currentEvidenceSummary.criticalSignals[0] || assessmentResult.recommendations[0]?.action || "Deployment risk assessed.",
-            findings: assessmentResult.ruleViolations as unknown as object,
-            environmentComparison: (assessmentResult.environmentComparison || {}) as unknown as object,
-            groundedExplanation: assessmentResult.recommendations.map((r) => r.action).join(" | "),
-            recommendedAction: assessmentResult.overallRisk === "CRITICAL" ? "ABORT" : "PROCEED",
-            checklist: assessmentResult.recommendations.map((r) => ({
-              item: r.action,
-              completed: false,
-              required: r.priority === "IMMEDIATE",
-            })),
-            llmModel: assessmentResult.provenance.llmModel,
-            llmDurationMs: assessmentResult.provenance.durationMs || 250,
-            validatedWithZod: true,
-            fallbackUsed: Boolean(assessmentResult.provenance.isFallbackUsed),
-          },
-          update: {
-            overallCategory: assessmentResult.overallRisk,
-            summary: assessmentResult.currentEvidenceSummary.criticalSignals[0] || assessmentResult.recommendations[0]?.action || "Deployment risk assessed.",
-            findings: assessmentResult.ruleViolations as unknown as object,
-            environmentComparison: (assessmentResult.environmentComparison || {}) as unknown as object,
-            groundedExplanation: assessmentResult.recommendations.map((r) => r.action).join(" | "),
-            recommendedAction: assessmentResult.overallRisk === "CRITICAL" ? "ABORT" : "PROCEED",
-            checklist: assessmentResult.recommendations.map((r) => ({
-              item: r.action,
-              completed: false,
-              required: r.priority === "IMMEDIATE",
-            })),
-            llmModel: assessmentResult.provenance.llmModel,
-            llmDurationMs: assessmentResult.provenance.durationMs || 250,
-            validatedWithZod: true,
-            fallbackUsed: Boolean(assessmentResult.provenance.isFallbackUsed),
+      const assessmentRecord = await prisma.assessment.upsert({
+        where: { deploymentId: deploymentRecord.id },
+        create: {
+          deploymentId: deploymentRecord.id,
+          overallCategory: assessmentResult.overallRisk,
+          summary: assessmentResult.currentEvidenceSummary.criticalSignals[0] || assessmentResult.recommendations[0]?.action || "Deployment risk assessed.",
+          findings: assessmentResult.ruleViolations as unknown as object,
+          environmentComparison: (assessmentResult.environmentComparison || {}) as unknown as object,
+          groundedExplanation: assessmentResult.recommendations.map((r) => r.action).join(" | "),
+          recommendedAction: assessmentResult.overallRisk === "CRITICAL" ? "ABORT" : "PROCEED",
+          checklist: assessmentResult.recommendations.map((r) => ({
+            item: r.action,
+            completed: false,
+            required: r.priority === "IMMEDIATE",
+          })),
+          llmModel: assessmentResult.provenance.llmModel,
+          llmDurationMs: assessmentResult.provenance.durationMs || 250,
+          validatedWithZod: true,
+          fallbackUsed: Boolean(assessmentResult.provenance.isFallbackUsed),
+        },
+        update: {
+          overallCategory: assessmentResult.overallRisk,
+          summary: assessmentResult.currentEvidenceSummary.criticalSignals[0] || assessmentResult.recommendations[0]?.action || "Deployment risk assessed.",
+          findings: assessmentResult.ruleViolations as unknown as object,
+          environmentComparison: (assessmentResult.environmentComparison || {}) as unknown as object,
+          groundedExplanation: assessmentResult.recommendations.map((r) => r.action).join(" | "),
+          recommendedAction: assessmentResult.overallRisk === "CRITICAL" ? "ABORT" : "PROCEED",
+          checklist: assessmentResult.recommendations.map((r) => ({
+            item: r.action,
+            completed: false,
+            required: r.priority === "IMMEDIATE",
+          })),
+          llmModel: assessmentResult.provenance.llmModel,
+          llmDurationMs: assessmentResult.provenance.durationMs || 250,
+          validatedWithZod: true,
+          fallbackUsed: Boolean(assessmentResult.provenance.isFallbackUsed),
+        },
+      });
+
+      // Track memory references linked to the created assessment
+      for (const mem of assessmentResult.recalledMemories) {
+        await prisma.memoryReference.create({
+          data: {
+            assessmentId: assessmentRecord.id,
+            hindsightBankId: assessmentResult.provenance.hindsightBankId,
+            externalMemoryId: mem.memoryId,
+            relevanceScore: mem.relevanceScore,
+            memoryType: "VERIFIED_EXPERIENCE",
+            snippet: `${mem.confirmedRootCause} -> ${mem.verifiedMitigation}`,
           },
         });
-
-        // Track memory references linked to the created assessment
-        for (const mem of assessmentResult.recalledMemories) {
-          await prisma.memoryReference.create({
-            data: {
-              assessmentId: assessmentRecord.id,
-              hindsightBankId: assessmentResult.provenance.hindsightBankId,
-              externalMemoryId: mem.memoryId,
-              relevanceScore: mem.relevanceScore,
-              memoryType: "VERIFIED_EXPERIENCE",
-              snippet: `${mem.confirmedRootCause} -> ${mem.verifiedMitigation}`,
-            },
-          });
-        }
-      } catch (err) {
-        console.warn("DB assessment persistence skipped (offline DB mode):", err);
       }
     });
 
@@ -244,7 +240,7 @@ export const processVerifiedResolution = inngest.createFunction(
         }
       }
 
-      resolvedProjectId = resolvedProjectId || "proj_releasetrace_core";
+      resolvedProjectId = resolvedProjectId || process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
       const canonicalDocId = `case-${resolvedProjectId}-${data.deploymentId}`;
 
       const retentionWorkflow = intelligenceEngine.getRetentionWorkflow();
@@ -261,23 +257,20 @@ export const processVerifiedResolution = inngest.createFunction(
           logsSample: [data.preventionGuideline || ""],
         },
         environment: {
-          runtime: deploymentEnv?.runtime || "nodejs-22",
+          runtime: deploymentEnv?.runtime || "unknown",
           database: {
             type: deploymentEnv?.database?.type || "postgresql",
-            version: deploymentEnv?.database?.version || "17",
-            poolSize: deploymentEnv?.database?.poolSize ?? 10,
+            version: deploymentEnv?.database?.version || "unknown",
+            poolSize: deploymentEnv?.database?.poolSize ?? undefined,
           },
           infrastructure: {
             provider: deploymentEnv?.infrastructure?.provider || "vercel",
-            region: deploymentEnv?.infrastructure?.region || "iad1",
-            replicas: deploymentEnv?.infrastructure?.replicas || 1,
+            region: deploymentEnv?.infrastructure?.region || "unknown",
+            replicas: deploymentEnv?.infrastructure?.replicas ?? 1,
           },
           featureFlags: deploymentEnv?.featureFlags || {},
           envVariables: deploymentEnv?.envVariables || {},
-          dependencies: deploymentEnv?.dependencies || {
-            next: "15.5.29",
-            "@prisma/client": "6.19.3",
-          },
+          dependencies: deploymentEnv?.dependencies || {},
         },
         confirmedRootCause: data.confirmedRootCause || "Root cause verified by lead engineer",
         verifiedMitigation: data.appliedFix || "Fix verified in production",
@@ -301,46 +294,42 @@ export const processVerifiedResolution = inngest.createFunction(
       };
     });
 
-    // Step 2: Persist Resolution Record in PostgreSQL
+    // Step 2: Persist Resolution Record in PostgreSQL (Never swallow DB failures)
     await step.run("persist-resolution-record", async () => {
-      try {
-        let assessmentId = data.assessmentId;
-        if (!assessmentId && data.deploymentId) {
-          const ass = await prisma.assessment.findUnique({
-            where: { deploymentId: data.deploymentId },
-          });
-          if (ass) assessmentId = ass.id;
-        }
+      let assessmentId = data.assessmentId;
+      if (!assessmentId && data.deploymentId) {
+        const ass = await prisma.assessment.findUnique({
+          where: { deploymentId: data.deploymentId },
+        });
+        if (ass) assessmentId = ass.id;
+      }
 
-        if (assessmentId && data.deploymentId) {
-          await prisma.resolution.upsert({
-            where: { deploymentId: data.deploymentId },
-            create: {
-              assessmentId,
-              deploymentId: data.deploymentId,
-              engineerName: data.engineerName || "Lead Engineer",
-              confirmedRootCause: data.confirmedRootCause || "Root cause verified by lead engineer",
-              appliedFix: data.appliedFix || "Mitigation applied and verified",
-              preventionGuideline: data.preventionGuideline || "Standard prevention procedure verified",
-              outcome: data.outcome || "resolved",
-              retainedToHindsight: Boolean(retainOutcome.retained),
-              hindsightMemoryId: "documentId" in retainOutcome ? (retainOutcome.documentId as string) : null,
-              retentionTags: data.tags || [],
-            },
-            update: {
-              engineerName: data.engineerName || undefined,
-              confirmedRootCause: data.confirmedRootCause || undefined,
-              appliedFix: data.appliedFix || undefined,
-              preventionGuideline: data.preventionGuideline || undefined,
-              outcome: data.outcome || undefined,
-              retainedToHindsight: Boolean(retainOutcome.retained),
-              hindsightMemoryId: "documentId" in retainOutcome ? (retainOutcome.documentId as string) : undefined,
-              retentionTags: data.tags || undefined,
-            },
-          });
-        }
-      } catch (err) {
-        console.warn("DB resolution persistence skipped (offline DB mode):", err);
+      if (assessmentId && data.deploymentId) {
+        await prisma.resolution.upsert({
+          where: { deploymentId: data.deploymentId },
+          create: {
+            assessmentId,
+            deploymentId: data.deploymentId,
+            engineerName: data.engineerName || "Lead Engineer",
+            confirmedRootCause: data.confirmedRootCause || "Root cause verified by lead engineer",
+            appliedFix: data.appliedFix || "Mitigation applied and verified",
+            preventionGuideline: data.preventionGuideline || "Standard prevention procedure verified",
+            outcome: data.outcome || "resolved",
+            retainedToHindsight: Boolean(retainOutcome.retained),
+            hindsightMemoryId: "documentId" in retainOutcome ? (retainOutcome.documentId as string) : null,
+            retentionTags: data.tags || [],
+          },
+          update: {
+            engineerName: data.engineerName || undefined,
+            confirmedRootCause: data.confirmedRootCause || undefined,
+            appliedFix: data.appliedFix || undefined,
+            preventionGuideline: data.preventionGuideline || undefined,
+            outcome: data.outcome || undefined,
+            retainedToHindsight: Boolean(retainOutcome.retained),
+            hindsightMemoryId: "documentId" in retainOutcome ? (retainOutcome.documentId as string) : undefined,
+            retentionTags: data.tags || undefined,
+          },
+        });
       }
     });
 

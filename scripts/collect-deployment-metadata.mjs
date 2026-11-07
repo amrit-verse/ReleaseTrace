@@ -100,24 +100,43 @@ function collectPrismaMetadata() {
   migrationNames.sort();
 
   return {
-    hasPendingMigrations: false, // In CI with valid migration files, defaults to clean
+    hasPendingMigrations: migrationNames.length > 0,
     migrationFileCount: migrationNames.length,
     migrationNames,
-    appliedMigrationsCount: migrationNames.length,
     schemaHash,
     sqlChecksums,
     validationError,
   };
 }
 
-function collectChangedFiles() {
+function collectGitStats() {
+  let additions = 0;
+  let deletions = 0;
+  let files = [];
   try {
-    const diff = runGit("diff --name-only HEAD~1 HEAD");
-    if (diff) {
-      return diff.split("\n").filter(Boolean);
+    const stat = runGit("diff --numstat HEAD~1 HEAD");
+    if (stat) {
+      for (const line of stat.split("\n").filter(Boolean)) {
+        const parts = line.split("\t");
+        if (parts.length >= 3) {
+          const add = parseInt(parts[0], 10);
+          const del = parseInt(parts[1], 10);
+          if (!isNaN(add)) additions += add;
+          if (!isNaN(del)) deletions += del;
+          files.push(parts[2].trim());
+        }
+      }
     }
   } catch {}
-  return [];
+
+  if (files.length === 0) {
+    try {
+      const diff = runGit("diff --name-only HEAD~1 HEAD");
+      if (diff) files = diff.split("\n").filter(Boolean);
+    } catch {}
+  }
+
+  return { additions, deletions, filesChanged: files };
 }
 
 export function assembleDeploymentPayload(options = {}) {
@@ -131,14 +150,24 @@ export function assembleDeploymentPayload(options = {}) {
   const testsPassed = options.testsPassed ?? true;
   const testSummary = options.testSummary || { total: 0, passed: 0, failed: 0, skipped: 0 };
   const migrationEvidence = options.migrationEvidence || collectPrismaMetadata();
-  const changedFiles = options.changedFiles || collectChangedFiles();
+  const gitStats = collectGitStats();
+  const changedFiles = options.changedFiles || gitStats.filesChanged;
 
   const collectedAt = new Date().toISOString();
   const eventId = options.eventId || `evt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
   const projectId = options.projectId || process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
   const projectName = options.projectName || process.env.RELEASETRACE_PROJECT_NAME || "ReleaseTrace Core";
 
-  const eventType = !buildPassed || !testsPassed ? "deployment_failed" : "deployment_completed";
+  const isCiRun = Boolean(process.env.GITHUB_ACTIONS || options.isCi);
+  const eventType = !buildPassed || !testsPassed
+    ? "deployment_failed"
+    : (isCiRun && !options.vercelDeploymentUrl ? "deployment_started" : "deployment_completed");
+
+  let packageDeps = {};
+  try {
+    const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), "package.json"), "utf8"));
+    packageDeps = { ...(pkg.dependencies || {}) };
+  } catch {}
 
   const evidence = {
     commitSha,
@@ -147,7 +176,7 @@ export function assembleDeploymentPayload(options = {}) {
     author,
     repository,
     framework: "nextjs",
-    runtimeVersion: "nodejs-22",
+    runtimeVersion: process.version || "nodejs-22",
     buildPassed,
     testsPassed,
     testSummary,
@@ -172,6 +201,16 @@ export function assembleDeploymentPayload(options = {}) {
       githubRunAttempt: process.env.GITHUB_RUN_ATTEMPT,
       githubWorkflow: process.env.GITHUB_WORKFLOW,
       ciProvider: "GitHub Actions",
+      ciVerificationStatus: buildPassed && testsPassed ? "PASSED" : "FAILED",
+      gitDiffStats: {
+        additions: gitStats.additions,
+        deletions: gitStats.deletions,
+        provenance: "git_diff_numstat_observed",
+      },
+      environment: {
+        runtime: process.version,
+        dependencies: packageDeps,
+      },
     },
   };
 
@@ -195,8 +234,16 @@ export function signPayload(payload, secret, timestamp = new Date().toISOString(
 // CLI Execution Mode
 if (process.argv[1] && process.argv[1].endsWith("collect-deployment-metadata.mjs")) {
   const args = process.argv.slice(2);
-  const secret = process.env.RELEASETRACE_WEBHOOK_SECRET || "default_releasetrace_webhook_secret_for_testing";
-  const endpoint = process.env.RELEASETRACE_ENDPOINT || "http://localhost:3000/api/webhooks/deployments";
+  const secret = process.env.RELEASETRACE_WEBHOOK_SECRET;
+  const endpoint = process.env.RELEASETRACE_ENDPOINT || "https://releasetrace.vercel.app/api/webhooks/deployments";
+
+  if (!secret) {
+    console.error("[ReleaseTrace CI] Error: RELEASETRACE_WEBHOOK_SECRET environment variable is not configured. Safe exit.");
+    if (args.includes("--ignore-connection-failure")) {
+      process.exit(0);
+    }
+    process.exit(1);
+  }
 
   const buildPassed = !args.includes("--build-failed");
   const testsPassed = !args.includes("--tests-failed");

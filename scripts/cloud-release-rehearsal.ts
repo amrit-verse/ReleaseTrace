@@ -5,8 +5,8 @@ import { generateHmacSignature } from "../src/lib/security/signature";
 const WEBHOOK_URL = "https://releasetrace.vercel.app/api/webhooks/deployments";
 const SECRET = process.env.RELEASETRACE_WEBHOOK_SECRET || "development-webhook-secret-key-32-chars-min";
 const INNGEST_KEY = process.env.INNGEST_SIGNING_KEY!;
-const PROJECT_ID = "proj-releasetrace-cloud";
-const PROJECT_NAME = "ReleaseTrace Cloud Service";
+const PROJECT_ID = process.env.RELEASETRACE_PROJECT_ID || "proj_releasetrace_core";
+const PROJECT_NAME = process.env.RELEASETRACE_PROJECT_NAME || "ReleaseTrace Core";
 
 const prisma = new PrismaClient({
   datasources: { db: { url: process.env.DATABASE_URL } },
@@ -174,14 +174,33 @@ async function main() {
       verificationEvidence: "Forensic verification in staging incident runbook #4102",
       notes: "Production-ready engineering confirmation",
     },
-    tags: ["payments", "postgresql", "connection-pool", "verified-resolution"],
+    tags: ["payments", "postgresql", "connection-pool", "verified-resolution", "synthetic-rehearsal"],
+    synthetic: true,
   };
 
+  // 4a: Verify unauthenticated retention is rejected with 401
+  console.log("  Testing spoofed/unauthenticated request rejection (401)...");
+  const unauthRes = await fetch(retainUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-engineer-email": "spoofed-engineer@releasetrace.dev",
+    },
+    body: JSON.stringify(retentionPayload),
+  });
+  console.log(`  ✓ Unauthenticated Status: ${unauthRes.status} (Expected: 401)`);
+  if (unauthRes.status !== 401) {
+    throw new Error(`Expected 401 Unauthorized for unauthenticated retention, received ${unauthRes.status}`);
+  }
+
+  // 4b: Authorized retention with Bearer token
+  console.log("  Submitting authorized engineer confirmation with Bearer token...");
+  const authSecret = process.env.RELEASETRACE_AUTH_SECRET || process.env.RELEASETRACE_ENGINEER_KEY || SECRET;
   const retainRes = await fetch(retainUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-engineer-email": "lead-engineer@releasetrace.dev",
+      "Authorization": `Bearer ${authSecret}`,
     },
     body: JSON.stringify(retentionPayload),
   });
@@ -278,6 +297,65 @@ async function main() {
   console.log("  ✓ Active Assessments in DB:", statsJson.activeAssessments);
   console.log("  ✓ Verified Precedents in Hindsight Bank:", statsJson.verifiedPrecedentsCount);
   console.log("  ✓ Hindsight Bank ID:", statsJson.bankId);
+
+  // -------------------------------------------------------------
+  // Clean up synthetic precedent from production Hindsight bank
+  // -------------------------------------------------------------
+  console.log("\n[9/10] Isolating and safely removing synthetic rehearsal document from production Hindsight bank...");
+  if (process.env.HINDSIGHT_API_KEY) {
+    try {
+      const { HindsightClient } = await import("@vectorize-io/hindsight-client");
+      const hindsight = new HindsightClient({
+        apiKey: process.env.HINDSIGHT_API_KEY,
+        baseUrl: process.env.HINDSIGHT_BASE_URL || "https://api.hindsight.vectorize.io",
+      });
+      const bankId = `rt-${PROJECT_ID}`;
+      const docList = await hindsight.listDocuments(bankId);
+      const docsToDelete = (docList.items || []).filter(
+        (doc: any) =>
+          doc.tags?.includes("synthetic-rehearsal") ||
+          doc.document_metadata?.memoryId === retainedDocId ||
+          doc.id === retainedDocId
+      );
+
+      for (const doc of docsToDelete) {
+        await hindsight.deleteDocument(bankId, doc.id);
+        console.log(`  ✓ Safely deleted synthetic rehearsal document: ${doc.id} from bank: ${bankId}`);
+      }
+
+      if (docsToDelete.length === 0 && retainedDocId) {
+        try {
+          await hindsight.deleteDocument(bankId, retainedDocId);
+          console.log(`  ✓ Safely deleted synthetic document: ${retainedDocId}`);
+        } catch {
+          // Document already clean
+        }
+      }
+    } catch (err: any) {
+      console.warn(`  ⚠ Warning: Unable to delete synthetic rehearsal document: ${err.message}`);
+    }
+  } else {
+    console.log("  - Skipped synthetic document cleanup (no HINDSIGHT_API_KEY)");
+  }
+
+  // -------------------------------------------------------------
+  // Final bank hygiene check
+  // -------------------------------------------------------------
+  console.log("\n[10/10] Verifying production Hindsight bank hygiene...");
+  if (process.env.HINDSIGHT_API_KEY) {
+    try {
+      const { HindsightClient } = await import("@vectorize-io/hindsight-client");
+      const hindsight = new HindsightClient({
+        apiKey: process.env.HINDSIGHT_API_KEY,
+        baseUrl: process.env.HINDSIGHT_BASE_URL || "https://api.hindsight.vectorize.io",
+      });
+      const bankId = `rt-${PROJECT_ID}`;
+      const docList = await hindsight.listDocuments(bankId);
+      console.log(`  ✓ Current active documents in production bank ${bankId}: ${docList.total ?? docList.items?.length ?? 0}`);
+    } catch (err: any) {
+      console.warn(`  ⚠ Warning checking doc count: ${err.message}`);
+    }
+  }
 
   console.log("\n=================================================================");
   console.log("  CLOUD INTEGRATION REHEARSAL SUMMARY");
